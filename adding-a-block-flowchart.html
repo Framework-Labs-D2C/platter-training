@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Add a Block to Product Cards — Testimonial Block Example</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #222633;
+      --border: #2e3348;
+      --text: #e2e4ed;
+      --text-muted: #8b8fa7;
+      --accent-blue: #5b8def;
+      --accent-green: #4ade80;
+      --accent-orange: #f59e0b;
+      --accent-purple: #a78bfa;
+      --accent-red: #f87171;
+      --accent-cyan: #22d3ee;
+      --accent-yellow: #fbbf24;
+      --accent-pink: #f472b6;
+      --step-bg: rgba(91, 141, 239, 0.08);
+      --step-border: rgba(91, 141, 239, 0.25);
+      --code-bg: rgba(167, 139, 250, 0.08);
+      --code-border: rgba(167, 139, 250, 0.25);
+      --css-bg: rgba(34, 211, 238, 0.08);
+      --css-border: rgba(34, 211, 238, 0.25);
+      --dynamic-bg: rgba(244, 114, 182, 0.08);
+      --dynamic-border: rgba(244, 114, 182, 0.25);
+      --liquid-bg: rgba(74, 222, 128, 0.08);
+      --liquid-border: rgba(74, 222, 128, 0.25);
+      --js-bg: rgba(245, 158, 11, 0.08);
+      --js-border: rgba(245, 158, 11, 0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 14px;
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* -- Legend -- */
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.step { background: var(--accent-blue); }
+    .legend-dot.schema { background: var(--accent-purple); }
+    .legend-dot.liquid { background: var(--accent-green); }
+    .legend-dot.css { background: var(--accent-cyan); }
+    .legend-dot.dynamic { background: var(--accent-pink); }
+    .legend-dot.js { background: var(--accent-orange); }
+
+    /* -- Nodes -- */
+
+    .node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      position: relative;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .node:hover {
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .node h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .node p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .node code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .node-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .node-tag.step { background: var(--step-bg); color: var(--accent-blue); border: 1px solid var(--step-border); }
+    .node-tag.schema { background: var(--code-bg); color: var(--accent-purple); border: 1px solid var(--code-border); }
+    .node-tag.liquid { background: var(--liquid-bg); color: var(--accent-green); border: 1px solid var(--liquid-border); }
+    .node-tag.css { background: var(--css-bg); color: var(--accent-cyan); border: 1px solid var(--css-border); }
+    .node-tag.dynamic { background: var(--dynamic-bg); color: var(--accent-pink); border: 1px solid var(--dynamic-border); }
+    .node-tag.js { background: var(--js-bg); color: var(--accent-orange); border: 1px solid var(--js-border); }
+
+    .node.step { border-color: var(--step-border); }
+    .node.schema { border-color: var(--code-border); }
+    .node.liquid { border-color: var(--liquid-border); }
+    .node.css { border-color: var(--css-border); }
+    .node.dynamic { border-color: var(--dynamic-border); }
+    .node.js { border-color: var(--js-border); }
+
+    .file-ref {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 10px;
+      opacity: 0.6;
+    }
+
+    /* -- Code blocks -- */
+
+    .code-block {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin-top: 12px;
+      color: var(--text);
+      white-space: pre;
+      tab-size: 2;
+    }
+
+    .code-block .comment { color: #6b7280; }
+    .code-block .keyword { color: var(--accent-purple); }
+    .code-block .string { color: var(--accent-green); }
+    .code-block .tag { color: var(--accent-red); }
+    .code-block .attr { color: var(--accent-orange); }
+    .code-block .value { color: var(--accent-cyan); }
+    .code-block .liquid { color: var(--accent-yellow); }
+    .code-block .prop { color: var(--accent-pink); }
+
+    /* -- Connector -- */
+
+    .connector {
+      display: flex;
+      justify-content: center;
+      padding: 6px 0;
+    }
+
+    .arrow-down {
+      width: 2px;
+      height: 28px;
+      position: relative;
+    }
+
+    .arrow-down::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+    }
+
+    .arrow-down.blue { background: var(--accent-blue); }
+    .arrow-down.blue::after { border-top: 6px solid var(--accent-blue); }
+    .arrow-down.purple { background: var(--accent-purple); }
+    .arrow-down.purple::after { border-top: 6px solid var(--accent-purple); }
+    .arrow-down.green { background: var(--accent-green); }
+    .arrow-down.green::after { border-top: 6px solid var(--accent-green); }
+    .arrow-down.cyan { background: var(--accent-cyan); }
+    .arrow-down.cyan::after { border-top: 6px solid var(--accent-cyan); }
+    .arrow-down.pink { background: var(--accent-pink); }
+    .arrow-down.pink::after { border-top: 6px solid var(--accent-pink); }
+    .arrow-down.orange { background: var(--accent-orange); }
+    .arrow-down.orange::after { border-top: 6px solid var(--accent-orange); }
+
+    /* -- Step counter -- */
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 700;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    .step-number.blue { background: var(--step-bg); color: var(--accent-blue); border: 2px solid var(--step-border); }
+    .step-number.purple { background: var(--code-bg); color: var(--accent-purple); border: 2px solid var(--code-border); }
+    .step-number.green { background: var(--liquid-bg); color: var(--accent-green); border: 2px solid var(--liquid-border); }
+    .step-number.cyan { background: var(--css-bg); color: var(--accent-cyan); border: 2px solid var(--css-border); }
+    .step-number.pink { background: var(--dynamic-bg); color: var(--accent-pink); border: 2px solid var(--dynamic-border); }
+    .step-number.orange { background: var(--js-bg); color: var(--accent-orange); border: 2px solid var(--js-border); }
+
+    .step-title {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    /* -- Divider -- */
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 56px 0;
+    }
+
+    /* -- Section headers -- */
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .section-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 6px;
+    }
+
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* -- Side-by-side columns -- */
+
+    .side-by-side {
+      display: flex;
+      gap: 20px;
+      margin-top: 12px;
+    }
+
+    .side-by-side > div {
+      flex: 1;
+    }
+
+    .side-by-side .code-block {
+      margin-top: 0;
+    }
+
+    .side-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    /* -- Prop table -- */
+
+    .prop-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+
+    .prop-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .prop-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .prop-table td:first-child { color: var(--accent-cyan); }
+    .prop-table td:nth-child(2) { color: var(--accent-purple); }
+
+    .prop-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* -- Highlight box -- */
+
+    .highlight-box {
+      background: rgba(91, 141, 239, 0.06);
+      border: 1px solid var(--step-border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    .highlight-box strong {
+      color: var(--text);
+    }
+
+    .highlight-box.warn {
+      background: rgba(248, 113, 113, 0.06);
+      border-color: rgba(248, 113, 113, 0.25);
+    }
+
+    .highlight-box.tip {
+      background: rgba(74, 222, 128, 0.06);
+      border-color: rgba(74, 222, 128, 0.25);
+    }
+
+    /* -- Nav Link -- */
+
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s, border-color 0.15s;
+      margin: 6px;
+    }
+
+    .nav-link:hover {
+      background: var(--step-bg);
+      border-color: var(--accent-blue);
+    }
+
+    /* -- Footer -- */
+
+    footer {
+      margin-top: 56px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      opacity: 0.5;
+    }
+
+    /* -- Responsive -- */
+
+    @media (max-width: 900px) {
+      .side-by-side { flex-direction: column; }
+      .node { padding: 16px; }
+      .code-block { font-size: 11px; }
+    }
+
+    @media print {
+      body { background: #fff; color: #111; padding: 20px; }
+      .node { border-color: #ccc; background: #f9f9f9; }
+      .node p, .node .file-ref { color: #555; }
+      .code-block { background: #f5f5f5; color: #111; border-color: #ddd; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Adding a Block to Product Cards</h1>
+      <p>End-to-end walkthrough using a <strong>Testimonial Block</strong> as the example — covering schema, prop drilling, static &amp; dynamic Liquid, custom CSS, and dynamic text resolution.</p>
+    </header>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot step"></div> Workflow Step</div>
+      <div class="legend-item"><div class="legend-dot schema"></div> Schema / Settings</div>
+      <div class="legend-item"><div class="legend-dot liquid"></div> Liquid (Static Render)</div>
+      <div class="legend-item"><div class="legend-dot css"></div> CSS Compilation</div>
+      <div class="legend-item"><div class="legend-dot dynamic"></div> Dynamic Text</div>
+      <div class="legend-item"><div class="legend-dot js"></div> JS / Dynamic Render</div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!--  STEP 1: DEFINE THE BLOCK SCHEMA                              -->
+    <!-- ============================================================ -->
+
+    <div class="node schema">
+      <div class="step-title">
+        <span class="step-number purple">1</span>
+        <span class="node-tag schema">Schema Definition</span>
+      </div>
+      <h3>Define the Block Type &amp; Settings</h3>
+      <p>Every block starts as a <code>type</code> entry in the card's section schema. The block's <code>type</code> must be globally unique across Shopify and follow the naming convention <code>_card_product_card__</code> + block name. Settings define what the merchant configures in the Theme Editor.</p>
+
+      <div class="code-block"><span class="comment">// Inside the card section schema's "blocks" array
+// Each block type has a name, type, and settings array</span>
+{
+  <span class="attr">"name"</span>: <span class="string">"Testimonial"</span>,
+  <span class="attr">"type"</span>: <span class="string">"_card_product_card__testimonial"</span>,
+  <span class="attr">"settings"</span>: [
+    <span class="comment">// --- Testimonial-specific settings ---</span>
+    {
+      <span class="attr">"type"</span>: <span class="string">"inline_richtext"</span>,
+      <span class="attr">"id"</span>: <span class="string">"author"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Author name"</span>,
+      <span class="attr">"default"</span>: <span class="string">"[product.vendor]"</span>        <span class="comment">// &lt;-- dynamic text!</span>
+    },
+    {
+      <span class="attr">"type"</span>: <span class="string">"richtext"</span>,
+      <span class="attr">"id"</span>: <span class="string">"content"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Review text"</span>,
+      <span class="attr">"default"</span>: <span class="string">"&lt;p&gt;Great product!&lt;/p&gt;"</span>
+    },
+    {
+      <span class="attr">"type"</span>: <span class="string">"range"</span>,
+      <span class="attr">"id"</span>: <span class="string">"rating"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Rating (1-5)"</span>,
+      <span class="attr">"min"</span>: <span class="value">1</span>,
+      <span class="attr">"max"</span>: <span class="value">5</span>,
+      <span class="attr">"step"</span>: <span class="value">1</span>,
+      <span class="attr">"default"</span>: <span class="value">5</span>
+    },
+    {
+      <span class="attr">"type"</span>: <span class="string">"image_picker"</span>,
+      <span class="attr">"id"</span>: <span class="string">"avatar"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Author photo (optional)"</span>
+    },
+    <span class="comment">// --- Star color overrides (fall back to global theme settings) ---</span>
+    {
+      <span class="attr">"type"</span>: <span class="string">"color"</span>,
+      <span class="attr">"alpha"</span>: <span class="value">true</span>,                         <span class="comment">// &lt;-- always use alpha: true for colors</span>
+      <span class="attr">"id"</span>: <span class="string">"star_active_color"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Star active color"</span>,
+      <span class="attr">"info"</span>: <span class="string">"Overrides global settings.color__review_stars"</span>
+    },
+    {
+      <span class="attr">"type"</span>: <span class="string">"color"</span>,
+      <span class="attr">"alpha"</span>: <span class="value">true</span>,
+      <span class="attr">"id"</span>: <span class="string">"star_base_color"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Star inactive color"</span>,
+      <span class="attr">"info"</span>: <span class="string">"Overrides global settings.color__review_stars_base"</span>
+    },
+    <span class="comment">// --- Standard settings (every block should include) ---</span>
+    {
+      <span class="attr">"type"</span>: <span class="string">"color"</span>,
+      <span class="attr">"alpha"</span>: <span class="value">true</span>,
+      <span class="attr">"id"</span>: <span class="string">"text_color"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Text color"</span>
+    },
+    {
+      <span class="attr">"type"</span>: <span class="string">"color"</span>,
+      <span class="attr">"alpha"</span>: <span class="value">true</span>,
+      <span class="attr">"id"</span>: <span class="string">"background_color"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Background color"</span>
+    },
+    {
+      <span class="attr">"type"</span>: <span class="string">"text"</span>,
+      <span class="attr">"id"</span>: <span class="string">"css_class"</span>,
+      <span class="attr">"label"</span>: <span class="string">"CSS class"</span>
+    },
+    {
+      <span class="attr">"type"</span>: <span class="string">"textarea"</span>,
+      <span class="attr">"id"</span>: <span class="string">"custom_css"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Custom CSS"</span>
+    },
+    {
+      <span class="attr">"type"</span>: <span class="string">"select"</span>,
+      <span class="attr">"id"</span>: <span class="string">"show_conditionally"</span>,
+      <span class="attr">"label"</span>: <span class="string">"Show conditionally"</span>,
+      <span class="attr">"default"</span>: <span class="string">"always"</span>,
+      <span class="attr">"options"</span>: [
+        { <span class="attr">"value"</span>: <span class="string">"always"</span>, <span class="attr">"label"</span>: <span class="string">"Always"</span> },
+        { <span class="attr">"value"</span>: <span class="string">"with_subscriptions"</span>, <span class="attr">"label"</span>: <span class="string">"Subscriptions only"</span> },
+        { <span class="attr">"value"</span>: <span class="string">"no_subscriptions"</span>, <span class="attr">"label"</span>: <span class="string">"No subscriptions"</span> }
+        <span class="comment">// ... more options</span>
+      ]
+    }
+  ]
+}</div>
+
+      <div class="highlight-box">
+        <strong>Key convention:</strong> <code>"default": "[product.vendor]"</code> uses bracket notation to indicate a dynamic text value. This means the field can pull live product data — not just static text. The brackets are resolved differently depending on the render path (server-side Liquid vs client-side JS).
+      </div>
+
+      <span class="file-ref">Defined in the section schema JSON (inside card_product_card.liquid or metaobject schema)</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down blue"></div></div>
+
+    <!-- ============================================================ -->
+    <!--  STEP 2: REGISTER IN _render_blocks                          -->
+    <!-- ============================================================ -->
+
+    <div class="node step">
+      <div class="step-title">
+        <span class="step-number blue">2</span>
+        <span class="node-tag step">Prop Drilling &mdash; _render_blocks</span>
+      </div>
+      <h3>Register the Block in the Render Dispatcher</h3>
+      <p>The <code>_render_blocks.liquid</code> snippet is the central dispatcher. It iterates <code>block_order</code>, checks each block's <code>type</code>, and renders the matching <code>.static.liquid</code> file. You must add a new <code>if</code> block for the testimonial type.</p>
+      <p style="margin-top: 8px;">Every block receives the <strong>same prop signature</strong> &mdash; this is the "prop drilling" pattern. The parent passes everything; the child uses what it needs.</p>
+
+      <div class="code-block"><span class="comment">{%- liquid comment -%}
+  Add this block alongside the other type checks
+  in card_product_card._render_blocks.liquid
+{%- endcomment -%}</span>
+
+<span class="liquid">if</span> block.type == <span class="string">'_card_product_card__testimonial'</span>
+  <span class="keyword">render</span> <span class="string">'card_product_card.testimonial.static'</span>,
+    <span class="prop">section_id</span>: section_id,
+    <span class="prop">block_id</span>: block_id,
+    <span class="prop">style_id</span>: style_id,
+    <span class="prop">selector</span>: selector,
+    <span class="prop">product</span>: product,
+    <span class="prop">variant</span>: variant,
+    <span class="prop">section</span>: section,
+    <span class="prop">block</span>: block,
+    <span class="prop">preorder</span>: preorder,
+    <span class="prop">preorder_date</span>: preorder_date,
+    <span class="prop">preorder_quantity</span>: preorder_quantity,
+    <span class="prop">price</span>: price,
+    <span class="prop">compare_at_price</span>: compare_at_price,
+    <span class="prop">is_bundle</span>: is_bundle,
+    <span class="prop">is_pdp</span>: is_pdp,
+    <span class="prop">preload_images</span>: preload_images
+<span class="liquid">endif</span></div>
+
+      <table class="prop-table">
+        <thead>
+          <tr><th>Prop</th><th>Type</th><th>Used by testimonial?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>style_id</td><td>string</td><td>Yes &mdash; for data-style-id on the root element</td></tr>
+          <tr><td>block</td><td>object</td><td>Yes &mdash; contains .settings (author, content, rating, etc.)</td></tr>
+          <tr><td>product</td><td>product</td><td>Yes &mdash; needed by _input.dynamic_content for bracket resolution</td></tr>
+          <tr><td>variant</td><td>variant</td><td>Yes &mdash; needed for [selected_variant.*] dynamic text</td></tr>
+          <tr><td>section_id</td><td>string</td><td>No &mdash; but always passed for consistency</td></tr>
+          <tr><td>block_id</td><td>string</td><td>Yes &mdash; used for show_conditionally editor detection</td></tr>
+          <tr><td>price</td><td>money</td><td>Not directly, but available if needed</td></tr>
+          <tr><td>is_bundle</td><td>boolean</td><td>Possibly &mdash; for show_conditionally logic</td></tr>
+        </tbody>
+      </table>
+
+      <div class="highlight-box tip">
+        <strong>Why pass everything?</strong> Liquid <code>render</code> creates an isolated scope &mdash; the child snippet can only access variables explicitly passed to it. This is why every block gets the full prop signature, even if it doesn't use all of them. It's not wasteful: unused variables are just ignored.
+      </div>
+
+      <span class="file-ref">card_product_card._render_blocks.liquid &mdash; add after line 78 (before endfor)</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down green"></div></div>
+
+    <!-- ============================================================ -->
+    <!--  STEP 3: CREATE THE .static.liquid FILE                       -->
+    <!-- ============================================================ -->
+
+    <div class="node liquid">
+      <div class="step-title">
+        <span class="step-number green">3</span>
+        <span class="node-tag liquid">Static Render &mdash; .static.liquid</span>
+      </div>
+      <h3>Create <code>card_product_card.testimonial.static.liquid</code></h3>
+      <p>This is the server-rendered version used for static (manual) product cards. It follows a strict pattern that all blocks share.</p>
+
+      <div class="code-block"><span class="comment">{%- comment -%} Auto Generated Variables start {%- endcomment -%}</span>
+<span class="liquid">{%- liquid</span>
+  <span class="keyword">assign</span> block_type = <span class="string">"_card_product_card__testimonial"</span>
+  <span class="keyword">assign</span> section_type = <span class="string">"card_product_card"</span>
+  <span class="comment">  // Extract all settings from the block</span>
+  <span class="keyword">assign</span> author = block.settings.author
+  <span class="keyword">assign</span> content = block.settings.content
+  <span class="keyword">assign</span> rating = block.settings.rating
+  <span class="keyword">assign</span> avatar = block.settings.avatar
+  <span class="keyword">assign</span> star_active_color = block.settings.star_active_color
+  <span class="keyword">assign</span> star_base_color = block.settings.star_base_color
+  <span class="keyword">assign</span> text_color = block.settings.text_color
+  <span class="keyword">assign</span> css_class = block.settings.css_class
+  <span class="keyword">assign</span> custom_css = block.settings.custom_css
+  <span class="keyword">assign</span> show_conditionally = block.settings.show_conditionally
+<span class="liquid">-%}</span>
+<span class="comment">{%- comment -%} Auto Generated Variables end {%- endcomment -%}</span>
+
+<span class="comment">{%- comment -%} --- Star color: block setting → global theme fallback --- {%- endcomment -%}</span>
+<span class="liquid">{% liquid</span>
+  <span class="comment">  // If merchant set a block-level star color (alpha > 0), use it.</span>
+  <span class="comment">  // Otherwise fall back to the global theme setting.</span>
+  <span class="keyword">if</span> star_active_color.alpha > 0
+    <span class="keyword">assign</span> styles = styles | append: <span class="string">"--star-active:"</span> | append: star_active_color | append: <span class="string">";"</span>
+  <span class="keyword">else</span>
+    <span class="keyword">assign</span> styles = styles | append: <span class="string">"--star-active: var(--color-review-stars--hex);"</span>
+  <span class="keyword">endif</span>
+  <span class="keyword">if</span> star_base_color.alpha > 0
+    <span class="keyword">assign</span> styles = styles | append: <span class="string">"--star-base:"</span> | append: star_base_color | append: <span class="string">";"</span>
+  <span class="keyword">else</span>
+    <span class="keyword">assign</span> styles = styles | append: <span class="string">"--star-base: var(--color-review-stars-base--hex);"</span>
+  <span class="keyword">endif</span>
+<span class="liquid">%}</span>
+
+<span class="comment">{%- comment -%} --- Standard conditional visibility --- {%- endcomment -%}</span>
+<span class="liquid">{% liquid</span>
+  <span class="keyword">if</span> show_conditionally == <span class="string">'with_subscriptions'</span> <span class="keyword">and</span> product.selling_plan_groups.size <= 0
+    break
+  <span class="keyword">endif</span>
+  <span class="keyword">if</span> show_conditionally == <span class="string">'no_subscriptions'</span> <span class="keyword">and</span> product.selling_plan_groups.size > 0
+    break
+  <span class="keyword">endif</span>
+  <span class="comment">  // ... same pattern for with_variants, bundle, etc.</span>
+<span class="liquid">%}</span>
+
+<span class="comment">{%- comment -%} --- Resolve dynamic text server-side --- {%- endcomment -%}</span>
+<span class="liquid">{% capture</span> dynamic_author <span class="liquid">%}</span>
+  <span class="liquid">{% render</span> <span class="string">'_input.dynamic_content'</span>,
+    content: author,
+    keys: <span class="string">'product, selected_variant'</span>,
+    product: product,
+    selected_variant: variant <span class="liquid">%}</span>
+<span class="liquid">{% endcapture %}</span>
+
+<span class="liquid">{% capture</span> dynamic_content <span class="liquid">%}</span>
+  <span class="liquid">{% render</span> <span class="string">'_input.dynamic_content'</span>,
+    content: content,
+    keys: <span class="string">'product, selected_variant'</span>,
+    product: product,
+    selected_variant: variant <span class="liquid">%}</span>
+<span class="liquid">{% endcapture %}</span>
+
+<span class="comment">{%- comment -%} --- Check if content uses selected_variant brackets --- {%- endcomment -%}</span>
+<span class="liquid">{% if</span> author <span class="keyword">contains</span> <span class="string">'[selected_'</span> <span class="keyword">or</span> content <span class="keyword">contains</span> <span class="string">'[selected_'</span> <span class="liquid">%}</span>
+  <span class="liquid">{% assign</span> is_dynamic = <span class="value">true</span> <span class="liquid">%}</span>
+<span class="liquid">{% endif %}</span>
+
+<span class="comment">&lt;!-- --- HTML Output --- --&gt;</span>
+<span class="tag">&lt;div</span>
+    <span class="attr">data-style-id</span>=<span class="string">"{{ style_id }}"</span>
+    <span class="attr">x-ignore</span>
+    <span class="attr">class</span>=<span class="string">"{{ css_class }}"</span>
+    <span class="attr">style</span>=<span class="string">"{{ styles }}"</span>
+    <span class="liquid">{% if</span> show_conditionally != <span class="string">'always'</span> <span class="liquid">%}</span>
+      <span class="attr">x-cloak</span>
+      <span class="attr">x-show</span>=<span class="string">"$editor.select_block_id === `{{ block_id }}`
+             || $data.showConditionally('{{ show_conditionally }}')"</span>
+    <span class="liquid">{% endif %}</span>
+    <span class="liquid">{% if</span> is_dynamic <span class="liquid">%}</span>
+      <span class="attr">x-data</span>=<span class="string">"{ author_text: getDynamicText($el.getAttribute('data-author')) }"</span>
+      <span class="attr">data-author</span>=<span class="string">"{{ author | escape }}"</span>
+      <span class="attr">x-effect</span>=<span class="string">"() => {
+        if (p_card?.selected_variant) {
+          author_text = getDynamicText($el.getAttribute('data-author'));
+        }
+      }"</span>
+    <span class="liquid">{% endif %}</span><span class="tag">&gt;</span>
+
+  <span class="comment">&lt;!-- Star rating --&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="string">"flex items-center gap-1"</span><span class="tag">&gt;</span>
+    <span class="liquid">{% for</span> i <span class="keyword">in</span> (1..5) <span class="liquid">%}</span>
+      <span class="tag">&lt;span</span> <span class="attr">class</span>=<span class="string">"{% if i <= rating %}text-[var(--star-active)]{% else %}text-[var(--star-base)]{% endif %}"</span><span class="tag">&gt;</span>
+        &#9733;
+      <span class="tag">&lt;/span&gt;</span>
+    <span class="liquid">{% endfor %}</span>
+  <span class="tag">&lt;/div&gt;</span>
+
+  <span class="comment">&lt;!-- Review text --&gt;</span>
+  <span class="liquid">{% render</span> <span class="string">'_input.richtext'</span>, content: dynamic_content <span class="liquid">%}</span>
+
+  <span class="comment">&lt;!-- Author line --&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="string">"flex items-center gap-2 mt-2"</span><span class="tag">&gt;</span>
+    <span class="liquid">{% if</span> avatar != blank <span class="liquid">%}</span>
+      <span class="tag">&lt;img</span> <span class="attr">src</span>=<span class="string">"{{ avatar | image_url: width: 32 }}"</span>
+           <span class="attr">width</span>=<span class="string">"32"</span> <span class="attr">height</span>=<span class="string">"32"</span>
+           <span class="attr">class</span>=<span class="string">"rounded-full"</span>
+           <span class="attr">alt</span>=<span class="string">"{{ dynamic_author | strip_html }}"</span><span class="tag"> /&gt;</span>
+    <span class="liquid">{% endif %}</span>
+    <span class="tag">&lt;span</span>
+      <span class="liquid">{% if</span> is_dynamic <span class="liquid">%}</span>
+        <span class="attr">x-text</span>=<span class="string">"author_text"</span>
+      <span class="liquid">{% endif %}</span><span class="tag">&gt;</span>
+      <span class="liquid">{% render</span> <span class="string">'_input.inline_richtext'</span>, content: dynamic_author <span class="liquid">%}</span>
+    <span class="tag">&lt;/span&gt;</span>
+  <span class="tag">&lt;/div&gt;</span>
+<span class="tag">&lt;/div&gt;</span></div>
+
+      <div class="highlight-box">
+        <strong>Pattern breakdown:</strong> The file follows 4 phases: (1) Variable extraction from <code>block.settings</code>, (2) Conditional visibility checks, (3) Dynamic text resolution via <code>_input.dynamic_content</code>, (4) HTML output with <code>data-style-id</code> for CSS scoping and optional Alpine reactivity for dynamic text fields.
+      </div>
+
+      <span class="file-ref">sections/__card_product_card/card_product_card.testimonial.static.liquid</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down cyan"></div></div>
+
+    <!-- ============================================================ -->
+    <!--  STEP 4: ADD BLOCK-SPECIFIC CSS                               -->
+    <!-- ============================================================ -->
+
+    <div class="node css">
+      <div class="step-title">
+        <span class="step-number cyan">4</span>
+        <span class="node-tag css">CSS &mdash; Block-Type Styles</span>
+      </div>
+      <h3>Add Custom CSS Rules in <code>_styles.liquid</code></h3>
+      <p>If your block needs type-specific CSS beyond <code>text_color</code> / <code>background_color</code> (which are handled by the base <code>&amp; { }</code> rule), add a conditional block in <code>card_product_card._styles.liquid</code>.</p>
+      <p style="margin-top: 8px;">The <code>&amp;</code> selector is a placeholder that gets replaced with the actual scoped selector at compile time.</p>
+
+      <div class="side-by-side">
+        <div>
+          <span class="side-label" style="color: var(--accent-cyan);">What you write (with &amp;)</span>
+          <div class="code-block"><span class="liquid">{% if</span> block.type == <span class="string">'_card_product_card__testimonial'</span> <span class="liquid">%}</span>
+  <span class="liquid">{% capture</span> additional_css <span class="liquid">%}</span>
+    <span class="tag">&</span> <span class="attr">img</span> {
+      <span class="attr">object-fit</span>: <span class="value">cover</span>;
+    }
+    <span class="tag">&</span> <span class="attr">blockquote</span> {
+      <span class="attr">font-style</span>: <span class="value">italic</span>;
+      <span class="attr">opacity</span>: <span class="value">0.9</span>;
+    }
+  <span class="liquid">{% endcapture %}</span>
+<span class="liquid">{% endif %}</span>
+
+<span class="comment">/* Star colors are NOT in _styles.liquid.
+   They're set as inline style= on the element
+   (see Step 3) so the cascade works:
+   block setting (alpha>0) → global CSS var */</span></div>
+        </div>
+        <div>
+          <span class="side-label" style="color: var(--accent-green);">Compiled output (scoped)</span>
+          <div class="code-block"><span class="comment">/* After: replace '&', selector */</span>
+<span class="comment">/* selector = [data-style-id="abc123"] */</span>
+
+<span class="tag">[data-style-id="abc123"]</span> <span class="attr">img</span> {
+  <span class="attr">object-fit</span>: <span class="value">cover</span>;
+}
+
+<span class="tag">[data-style-id="abc123"]</span> <span class="attr">blockquote</span> {
+  <span class="attr">font-style</span>: <span class="value">italic</span>;
+  <span class="attr">opacity</span>: <span class="value">0.9</span>;
+}</div>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <strong>How the replacement chain works:</strong><br>
+        <code>css</code> (base: text_color, background_color) + <code>additional_css</code> (block-type-specific) + <code>_settings.custom_css</code> (merchant overrides) &rarr; all <code>&amp;</code> replaced with <code>[data-style-id="..."]</code> &rarr; <code>strip_newlines</code> &rarr; output.<br><br>
+        <strong>Line 84:</strong> <code>{{ css | append: additional_css | append: _settings.custom_css | replace: '&amp;', selector | strip_newlines }}</code>
+      </div>
+
+      <div class="highlight-box tip">
+        <strong>Star color cascade pattern:</strong> Star colors use <strong>inline <code>style=</code></strong> on the element (Step 3), not <code>_styles.liquid</code>. This follows the same pattern as the existing rating block:<br><br>
+        <strong>1.</strong> Block setting has <code>alpha &gt; 0</code>? &rarr; Use the block-level color directly: <code>--star-active: #f3e008;</code><br>
+        <strong>2.</strong> Block setting is transparent / unset? &rarr; Point to the global CSS variable: <code>--star-active: var(--color-review-stars--hex);</code><br><br>
+        The global variables (<code>--color-review-stars--hex</code>, <code>--color-review-stars-base--hex</code>) are defined in <code>_layout.global_colors.liquid</code> from <code>settings.color__review_stars</code> and <code>settings.color__review_stars_base</code> in <code>settings_schema.ts</code>.<br><br>
+        <strong>Why <code>alpha: true</code>?</strong> All color settings must use <code>"alpha": true</code> in the schema. This gives Shopify's color picker a transparency slider, and lets us check <code>.alpha &gt; 0</code> in Liquid to detect whether the merchant actually set a color vs. left it empty/transparent.
+      </div>
+
+      <span class="file-ref">card_product_card._styles.liquid &mdash; add before line 83 (before the endcapture chain)</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down pink"></div></div>
+
+    <!-- ============================================================ -->
+    <!--  STEP 5: DYNAMIC TEXT DEEP DIVE                               -->
+    <!-- ============================================================ -->
+
+    <div class="node dynamic">
+      <div class="step-title">
+        <span class="step-number pink">5</span>
+        <span class="node-tag dynamic">Dynamic Text &mdash; Bracket Notation</span>
+      </div>
+      <h3>How <code>[product.vendor]</code> Becomes Real Data</h3>
+      <p>The testimonial's <code>author</code> field has a default of <code>[product.vendor]</code>. This bracket notation is resolved by two completely different systems depending on the render path.</p>
+
+      <div class="side-by-side">
+        <div>
+          <span class="side-label" style="color: var(--accent-green);">Server-side (Static Cards)</span>
+          <div class="code-block"><span class="comment">// _input.dynamic_content.liquid</span>
+<span class="comment">// Receives: content, keys, product, variant</span>
+
+<span class="comment">// 1. Find brackets: [product.vendor]</span>
+<span class="comment">// 2. Split by '.': ["product", "vendor"]</span>
+<span class="comment">// 3. Traverse: product["vendor"]</span>
+<span class="comment">// 4. Return: "Nike"</span>
+
+<span class="liquid">{% capture</span> dynamic_author <span class="liquid">%}</span>
+  <span class="liquid">{% render</span> <span class="string">'_input.dynamic_content'</span>,
+    content: author,
+    keys: <span class="string">'product, selected_variant'</span>,
+    product: product,
+    selected_variant: variant <span class="liquid">%}</span>
+<span class="liquid">{% endcapture %}</span>
+<span class="comment">// Result: "Nike" (plain text in HTML)</span></div>
+        </div>
+        <div>
+          <span class="side-label" style="color: var(--accent-orange);">Client-side (Dynamic Cards)</span>
+          <div class="code-block"><span class="comment">// utils.ts → getBracketInputDynamicPluralizedText()</span>
+<span class="comment">// Called via getDynamicText() in Alpine</span>
+
+<span class="comment">// 1. Read data-author="[product.vendor]"</span>
+<span class="comment">// 2. Parse brackets</span>
+<span class="comment">// 3. Look up in Alpine state:</span>
+<span class="comment">//    p_card.product.vendor → "Nike"</span>
+<span class="comment">// 4. Return: "Nike"</span>
+
+<span class="attr">x-data</span>=<span class="string">"{ author_text:
+  getDynamicText(
+    $el.getAttribute('data-author')
+  )
+}"</span>
+<span class="attr">x-text</span>=<span class="string">"author_text"</span>
+<span class="comment">// Result: "Nike" (reactive, updates on
+// variant change)</span></div>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <strong>Special resolution types:</strong> The bracket system isn't just for text. It handles:
+        <ul style="margin-top: 6px; margin-left: 16px; list-style: disc;">
+          <li><strong>Prices</strong>: <code>[selected_variant.price]</code> &rarr; formatted with <code>money</code> filter (Liquid) or <code>utils.formatMoney()</code> (JS)</li>
+          <li><strong>Images</strong>: <code>[product.featured_image]</code> &rarr; processed with <code>image_url</code> filter (Liquid) or <code>utils.getImageSrcSet()</code> (JS)</li>
+          <li><strong>Metafields</strong>: <code>[product.metafields.custom.review_text]</code> &rarr; checks <code>.type</code> and <code>.value</code> automatically</li>
+          <li><strong>Rich text metafields</strong>: Auto-applies <code>metafield_tag</code> filter for HTML output</li>
+          <li><strong>Dates</strong>: Converted from Day.js format to Liquid date format server-side</li>
+          <li><strong>Fallback chain</strong>: <code>[selected_variant.compare_at_price],[product.compare_at_price]</code> &rarr; tries first, falls back to second</li>
+        </ul>
+      </div>
+
+      <span class="file-ref">snippets/_input.dynamic_content.liquid &mdash; lines 1-179 | assets/utils.ts &mdash; lines 685-804</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down orange"></div></div>
+
+    <!-- ============================================================ -->
+    <!--  STEP 6: DYNAMIC RENDER VERSION                               -->
+    <!-- ============================================================ -->
+
+    <div class="node js">
+      <div class="step-title">
+        <span class="step-number orange">6</span>
+        <span class="node-tag js">Dynamic Render &mdash; .liquid (no .static)</span>
+      </div>
+      <h3>Create <code>card_product_card.testimonial.liquid</code></h3>
+      <p>This is the version used when the card is rendered dynamically (recently_viewed) or when the metaobject is blank. It runs inside an already-initialized Alpine scope (<code>p_card</code>), so everything is reactive by default.</p>
+      <p style="margin-top: 8px;"><strong>Key differences from .static:</strong></p>
+
+      <div class="code-block"><span class="comment">{%- comment -%} Auto Generated Variables start {%- endcomment -%}</span>
+<span class="liquid">{%- liquid</span>
+  <span class="keyword">assign</span> block_type = <span class="string">"_card_product_card__testimonial"</span>
+  <span class="keyword">assign</span> section_type = <span class="string">"card_product_card"</span>
+  <span class="keyword">assign</span> author = block.settings.author
+  <span class="keyword">assign</span> content = block.settings.content
+  <span class="keyword">assign</span> rating = block.settings.rating
+  <span class="keyword">assign</span> avatar = block.settings.avatar
+  <span class="comment">  // ... same settings extraction</span>
+<span class="liquid">-%}</span>
+
+<span class="comment">&lt;!-- Inline &lt;style&gt; for missing metaobject fallback --&gt;</span>
+<span class="liquid">{% if</span> request.design_mode <span class="keyword">or</span> metaobjects.product_cards[section.settings.product_card] == blank <span class="liquid">%}</span>
+  <span class="liquid">{% capture</span> selector <span class="liquid">%}</span>[data-style-id="<span class="liquid">{{ block.id | split: "__" | last }}</span>"]<span class="liquid">{% endcapture %}</span>
+  <span class="liquid">{% if</span> text_color != blank <span class="keyword">and</span> text_color.alpha != 0 <span class="liquid">%}</span>
+    <span class="liquid">{% capture</span> css <span class="liquid">%}</span>& { color: <span class="liquid">{{ text_color }}</span>; }<span class="liquid">{% endcapture %}</span>
+  <span class="liquid">{% endif %}</span>
+  <span class="tag">&lt;style&gt;</span>
+    <span class="liquid">{{ css | append: custom_css | replace: '&amp;', selector | strip_newlines }}</span>
+  <span class="tag">&lt;/style&gt;</span>
+<span class="liquid">{% endif %}</span>
+
+<span class="comment">&lt;!-- Fully reactive output --&gt;</span>
+<span class="tag">&lt;div</span> <span class="attr">data-style-id</span>=<span class="string">"{{ block.id | split: '__' | last }}"</span>
+     <span class="liquid">{{ block.shopify_attributes }}</span>
+     <span class="attr">x-data</span>=<span class="string">"{ author_text: getDynamicText($el.getAttribute('data-author')) }"</span>
+     <span class="attr">data-author</span>=<span class="string">"{{ author | escape }}"</span>
+     <span class="attr">data-content</span>=<span class="string">"{% render '_input.richtext', content: content, escape: true %}"</span>
+     <span class="attr">x-effect</span>=<span class="string">"() => {
+       if (p_card?.selected_variant || p_card?.hydrated) {
+         author_text = getDynamicText($el.getAttribute('data-author'));
+       }
+     }"</span>
+     <span class="attr">x-cloak</span><span class="tag">&gt;</span>
+
+  <span class="comment">&lt;!-- Stars, content, author &mdash; same HTML structure --&gt;</span>
+  <span class="comment">&lt;!-- But all text uses x-text / x-html bindings --&gt;</span>
+  <span class="comment">&lt;!-- No server-resolved content &mdash; all reactive --&gt;</span>
+
+<span class="tag">&lt;/div&gt;</span></div>
+
+      <div class="side-by-side" style="margin-top: 16px;">
+        <div>
+          <span class="side-label" style="color: var(--accent-green);">.static.liquid (static path)</span>
+          <div class="code-block"><span class="comment">// Uses style_id from _render_blocks</span>
+<span class="attr">data-style-id</span>=<span class="string">"{{ style_id }}"</span>
+
+<span class="comment">// Server-rendered content as fallback</span>
+<span class="liquid">{% render '_input.richtext',
+  content: dynamic_content %}</span>
+
+<span class="comment">// x-ignore on root (opt out of Alpine)</span>
+<span class="attr">x-ignore</span>
+
+<span class="comment">// Only reactive if [selected_*] detected</span>
+<span class="liquid">{% if is_dynamic %}</span>
+  <span class="attr">x-data</span>="..." <span class="attr">x-effect</span>="..."
+<span class="liquid">{% endif %}</span></div>
+        </div>
+        <div>
+          <span class="side-label" style="color: var(--accent-orange);">.liquid (dynamic path)</span>
+          <div class="code-block"><span class="comment">// Uses block.id split for style_id</span>
+<span class="attr">data-style-id</span>=<span class="string">"{{ block.id
+  | split: '__' | last }}"</span>
+
+<span class="comment">// No server content &mdash; all via x-html</span>
+<span class="attr">x-html</span>=<span class="string">"content"</span>
+
+<span class="comment">// Always has x-data (no x-ignore)</span>
+<span class="attr">x-data</span>="..." <span class="attr">x-effect</span>="..."
+<span class="attr">x-cloak</span>
+
+<span class="comment">// Inline &lt;style&gt; if metaobject missing</span>
+<span class="liquid">{% if metaobjects...blank %}</span>
+  <span class="tag">&lt;style&gt;</span>...<span class="tag">&lt;/style&gt;</span>
+<span class="liquid">{% endif %}</span></div>
+        </div>
+      </div>
+
+      <span class="file-ref">sections/__card_product_card/card_product_card.testimonial.liquid</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ============================================================ -->
+    <!--  CHECKLIST: Files to create / modify                          -->
+    <!-- ============================================================ -->
+
+    <div class="section-header">
+      <h2>Complete File Checklist</h2>
+      <p>Every file you need to create or modify when adding a new block type</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+
+      <div class="node" style="border-color: var(--accent-green);">
+        <span class="node-tag liquid">Create</span>
+        <h3><code>card_product_card.testimonial.static.liquid</code></h3>
+        <p>Server-rendered version. Uses <code>_input.dynamic_content</code> for bracket resolution. Sets <code>data-style-id="{{ style_id }}"</code>. Outputs full HTML with optional Alpine reactivity for <code>[selected_*]</code> fields.</p>
+        <span class="file-ref">sections/__card_product_card/</span>
+      </div>
+
+      <div class="node" style="border-color: var(--accent-orange);">
+        <span class="node-tag js">Create</span>
+        <h3><code>card_product_card.testimonial.liquid</code></h3>
+        <p>Dynamic/hydrated version. Always reactive. Uses <code>x-data</code>/<code>x-effect</code>/<code>x-html</code>. Handles inline CSS fallback when metaobject is blank. Sets <code>data-style-id="{{ block.id | split: '__' | last }}"</code>.</p>
+        <span class="file-ref">sections/__card_product_card/</span>
+      </div>
+
+      <div class="node" style="border-color: var(--accent-blue);">
+        <span class="node-tag step">Modify</span>
+        <h3><code>card_product_card._render_blocks.liquid</code></h3>
+        <p>Add <code>if block.type == '_card_product_card__testimonial'</code> with full prop signature render call. Place alongside existing block type checks.</p>
+        <span class="file-ref">sections/__card_product_card/ &mdash; before endfor</span>
+      </div>
+
+      <div class="node" style="border-color: var(--accent-cyan);">
+        <span class="node-tag css">Modify</span>
+        <h3><code>card_product_card._styles.liquid</code></h3>
+        <p>Add <code>{% if block.type == '_card_product_card__testimonial' %}</code> with <code>additional_css</code> capture. Place before line 83 (before the final output line).</p>
+        <span class="file-ref">sections/__card_product_card/ &mdash; before line 83</span>
+      </div>
+
+      <div class="node" style="border-color: var(--accent-purple);">
+        <span class="node-tag schema">Modify</span>
+        <h3>Section Schema JSON</h3>
+        <p>Add the testimonial block type definition with all settings to the card section's schema <code>"blocks"</code> array. The schema lives inside the card section or metaobject definition.</p>
+        <span class="file-ref">Section schema (inside card_product_card section)</span>
+      </div>
+
+      <div class="node" style="border-color: var(--accent-pink);">
+        <span class="node-tag dynamic">Verify</span>
+        <h3>Dynamic Text Integration</h3>
+        <p>Test bracket notation in both paths: static (<code>_input.dynamic_content</code>) and dynamic (<code>getDynamicText()</code>). Verify <code>[product.vendor]</code> resolves correctly and updates on variant change if using <code>[selected_*]</code>.</p>
+        <span class="file-ref">Test in Theme Editor + preview</span>
+      </div>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ============================================================ -->
+    <!--  COMMON PITFALLS                                              -->
+    <!-- ============================================================ -->
+
+    <div class="section-header">
+      <h2>Common Pitfalls</h2>
+      <p>Things that trip up developers when adding new blocks</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+
+      <div class="highlight-box warn">
+        <strong>Forgetting <code>x-ignore</code> on static</strong><br>
+        The <code>.static.liquid</code> file should have <code>x-ignore</code> on the root element. Without it, Alpine will try to initialize the element and may conflict with the server-rendered content. Only add Alpine directives (<code>x-data</code>, <code>x-effect</code>) when <code>is_dynamic</code> is true.
+      </div>
+
+      <div class="highlight-box warn">
+        <strong>Wrong <code>data-style-id</code> source</strong><br>
+        Static uses <code>{{ style_id }}</code> (passed from <code>_render_blocks</code>).<br>
+        Dynamic uses <code>{{ block.id | split: "__" | last }}</code>.<br>
+        Mixing these up means CSS won't match your elements.
+      </div>
+
+      <div class="highlight-box warn">
+        <strong>Missing <code>&amp;</code> in CSS rules</strong><br>
+        Every CSS rule in <code>_styles.liquid</code> must start with <code>&amp;</code>. Writing <code>img { }</code> instead of <code>&amp; img { }</code> creates a global rule that affects ALL images on the page, not just your block.
+      </div>
+
+      <div class="highlight-box warn">
+        <strong>Not handling the blank metaobject case</strong><br>
+        The <code>.liquid</code> (dynamic) file must include inline <code>&lt;style&gt;</code> output when <code>metaobjects.product_cards[...] == blank</code>. Otherwise the block renders with no styling at all in the fallback path.
+      </div>
+
+      <div class="highlight-box warn">
+        <strong>Bracket notation with <code>[selected_*]</code></strong><br>
+        Fields using <code>[selected_variant.*]</code> need the <code>is_dynamic</code> check. If you use <code>[product.*]</code> only (no variant dependency), the value is static and doesn't need Alpine reactivity in the <code>.static.liquid</code> file.
+      </div>
+
+      <div class="highlight-box warn">
+        <strong>Prop signature mismatch</strong><br>
+        Every block in <code>_render_blocks.liquid</code> must pass the <strong>exact same prop list</strong>. If you miss a prop (like <code>is_bundle</code>), the <code>show_conditionally</code> logic will silently fail &mdash; the variable will be <code>nil</code> instead of <code>false</code>.
+      </div>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <div style="text-align: center;">
+      <a href="product-card-rendering-flowchart.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 8H5m0 0l3-3M5 8l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back: Product Card Rendering Flow
+      </a>
+      <a href="modal-swr-lazy-loading-flowchart.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h8m0 0L8 5m3 3L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Next: Modal &amp; SWR Lazy Loading
+      </a>
+    </div>
+
+    <footer>
+      Accelerate-Z Training &mdash; Adding a Block to Product Cards &mdash; Platter Internal
+    </footer>
+
+  </div>
+</body>
+</html>
