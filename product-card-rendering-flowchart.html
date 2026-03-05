@@ -18,12 +18,15 @@
       --accent-purple: #a78bfa;
       --accent-red: #f87171;
       --accent-cyan: #22d3ee;
+      --accent-yellow: #fbbf24;
       --static-bg: rgba(74, 222, 128, 0.08);
       --static-border: rgba(74, 222, 128, 0.25);
       --dynamic-bg: rgba(248, 113, 113, 0.08);
       --dynamic-border: rgba(248, 113, 113, 0.25);
       --shared-bg: rgba(91, 141, 239, 0.08);
       --shared-border: rgba(91, 141, 239, 0.25);
+      --fallback-bg: rgba(251, 191, 36, 0.08);
+      --fallback-border: rgba(251, 191, 36, 0.25);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -37,7 +40,7 @@
     }
 
     .container {
-      max-width: 1280px;
+      max-width: 1440px;
       margin: 0 auto;
     }
 
@@ -85,6 +88,7 @@
     .legend-dot.shared { background: var(--accent-blue); }
     .legend-dot.js { background: var(--accent-orange); }
     .legend-dot.metaobject { background: var(--accent-purple); }
+    .legend-dot.fallback { background: var(--accent-yellow); }
 
     /* ── Flow Layout ── */
 
@@ -93,15 +97,6 @@
       flex-direction: column;
       align-items: center;
       gap: 0;
-    }
-
-    .flow-row {
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      gap: 64px;
-      width: 100%;
-      position: relative;
     }
 
     /* ── Nodes ── */
@@ -142,6 +137,11 @@
       transform: translateY(-2px);
     }
 
+    .node.decision.inline {
+      min-width: 280px;
+      max-width: 380px;
+    }
+
     .node.static {
       background: var(--static-bg);
       border-color: var(--static-border);
@@ -157,8 +157,97 @@
       border-color: rgba(245, 158, 11, 0.25);
     }
 
+    .node.fallback {
+      background: var(--fallback-bg);
+      border-color: var(--fallback-border);
+    }
+
     .node.final {
       text-align: center;
+    }
+
+    .node.convergence {
+      border-width: 2px;
+      border-image: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange)) 1;
+      border-style: solid;
+      border-radius: 0;
+      outline: 2px solid transparent;
+      outline-offset: 3px;
+      position: relative;
+    }
+
+    .node.convergence::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 14px;
+      border: 1px dashed var(--accent-yellow);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* Round the convergence node with a wrapper trick */
+    .convergence-wrap {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid var(--accent-orange);
+      position: relative;
+    }
+
+    .convergence-wrap .node {
+      border: none;
+      border-radius: 0;
+    }
+
+    .merge-pointer {
+      background: var(--fallback-bg);
+      border: 2px dashed var(--accent-yellow);
+      border-radius: 12px;
+      padding: 14px 20px;
+      min-width: 260px;
+      max-width: 320px;
+      text-align: center;
+      position: relative;
+    }
+
+    .merge-pointer .merge-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-yellow);
+      letter-spacing: 0.5px;
+    }
+
+    .merge-pointer .merge-badge svg {
+      flex-shrink: 0;
+    }
+
+    .merge-pointer p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .converge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      background: rgba(251, 191, 36, 0.12);
+      color: var(--accent-yellow);
+      margin-left: 6px;
+    }
+
+    .converge-tag svg {
+      flex-shrink: 0;
     }
 
     .node-tag {
@@ -177,6 +266,7 @@
     .node-tag.shared { background: rgba(91, 141, 239, 0.15); color: var(--accent-blue); }
     .node-tag.js { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
     .node-tag.metaobject { background: rgba(167, 139, 250, 0.15); color: var(--accent-purple); }
+    .node-tag.fallback { background: rgba(251, 191, 36, 0.15); color: var(--accent-yellow); }
 
     .node h3 {
       font-size: 15px;
@@ -217,10 +307,6 @@
       padding: 6px 0;
     }
 
-    .connector svg {
-      display: block;
-    }
-
     .connector-label {
       font-size: 11px;
       font-weight: 600;
@@ -233,7 +319,7 @@
 
     .connector-label.yes { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
     .connector-label.no { color: var(--accent-red); background: rgba(248, 113, 113, 0.1); }
-    .connector-label.then { color: var(--accent-blue); background: rgba(91, 141, 239, 0.1); }
+    .connector-label.fallback-label { color: var(--accent-yellow); background: rgba(251, 191, 36, 0.1); }
 
     .arrow-down {
       width: 2px;
@@ -261,8 +347,10 @@
     .arrow-down.blue::after { border-top-color: var(--accent-blue); }
     .arrow-down.orange { background: var(--accent-orange); }
     .arrow-down.orange::after { border-top-color: var(--accent-orange); }
+    .arrow-down.yellow { background: var(--accent-yellow); }
+    .arrow-down.yellow::after { border-top-color: var(--accent-yellow); }
 
-    /* ── Split Connector ── */
+    /* ── Split Connector (top-level) ── */
 
     .split-section {
       width: 100%;
@@ -273,7 +361,7 @@
 
     .split-bar {
       position: relative;
-      width: 620px;
+      width: 740px;
       height: 40px;
     }
 
@@ -291,8 +379,8 @@
       content: '';
       position: absolute;
       top: 12px;
-      left: calc(50% - 310px);
-      width: 620px;
+      left: calc(50% - 370px);
+      width: 740px;
       height: 2px;
       background: var(--border);
     }
@@ -300,7 +388,7 @@
     .split-arms {
       display: flex;
       justify-content: center;
-      gap: 340px;
+      gap: 460px;
       margin-top: -4px;
     }
 
@@ -308,6 +396,48 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+    }
+
+    /* ── Inner Split (metaobject blank check) ── */
+
+    .inner-split {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .inner-split-bar {
+      position: relative;
+      width: 380px;
+      height: 36px;
+    }
+
+    .inner-split-bar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 2px;
+      height: 10px;
+      background: var(--border);
+    }
+
+    .inner-split-bar::after {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: calc(50% - 190px);
+      width: 380px;
+      height: 2px;
+      background: var(--border);
+    }
+
+    .inner-split-arms {
+      display: flex;
+      justify-content: center;
+      gap: 140px;
+      margin-top: -4px;
     }
 
     /* ── Columns ── */
@@ -340,6 +470,157 @@
 
     .column-header.static { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
     .column-header.dynamic { color: var(--accent-red); background: rgba(248, 113, 113, 0.1); }
+
+    /* ── Sub-columns (within static path) ── */
+
+    .sub-columns {
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .sub-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      flex: 0 0 auto;
+    }
+
+    /* ── CSS Side Flow ── */
+
+    .css-section {
+      margin-top: 56px;
+      width: 100%;
+      max-width: 1100px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .css-section-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .css-section-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 6px;
+    }
+
+    .css-section-header p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .css-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .css-columns {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .css-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      flex: 1;
+      max-width: 340px;
+    }
+
+    .node.css-node {
+      background: rgba(34, 211, 238, 0.06);
+      border-color: rgba(34, 211, 238, 0.25);
+    }
+
+    .node-tag.css { background: rgba(34, 211, 238, 0.15); color: var(--accent-cyan); }
+
+    .arrow-down.cyan { background: var(--accent-cyan); }
+    .arrow-down.cyan::after { border-top-color: var(--accent-cyan); }
+
+    .css-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 8px;
+    }
+
+    .css-compare-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+
+    .css-compare-card h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .css-compare-card .example {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      background: rgba(0,0,0,0.3);
+      padding: 10px 12px;
+      border-radius: 6px;
+      color: var(--accent-cyan);
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    .css-compare-card p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    .divider {
+      width: 100%;
+      max-width: 800px;
+      height: 1px;
+      background: var(--border);
+      margin: 48px auto;
+    }
+
+    /* ── Nav Link ── */
+
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s, border-color 0.15s;
+      margin-top: 20px;
+    }
+
+    .nav-link:hover {
+      background: var(--shared-bg);
+      border-color: var(--accent-blue);
+    }
 
     /* ── Outcome Box ── */
 
@@ -391,6 +672,7 @@
 
     .outcome-card.static-outcome li::before { background: var(--accent-green); }
     .outcome-card.dynamic-outcome li::before { background: var(--accent-red); }
+    .outcome-card.fallback-outcome li::before { background: var(--accent-yellow); }
 
     /* ── Footer ── */
 
@@ -404,11 +686,11 @@
 
     /* ── Responsive ── */
 
-    @media (max-width: 900px) {
-      .columns { flex-direction: column; align-items: center; gap: 24px; }
-      .split-bar { display: none; }
-      .split-arms { display: none; }
-      .flow-row { flex-direction: column; align-items: center; gap: 24px; }
+    @media (max-width: 1100px) {
+      .columns { flex-direction: column; align-items: center; gap: 40px; }
+      .sub-columns { flex-direction: column; align-items: center; gap: 24px; }
+      .split-bar, .inner-split-bar { display: none; }
+      .split-arms, .inner-split-arms { display: none; }
       .node { min-width: 280px; max-width: 90vw; }
       .node.entry, .node.decision { min-width: 280px; }
     }
@@ -425,13 +707,14 @@
 
     <header>
       <h1>Product Card Rendering Flow</h1>
-      <p>Static (Manually Selected) vs Dynamic (Recently Viewed) — Entry Point Comparison</p>
+      <p>Static (Manually Selected) vs Dynamic (Recently Viewed) — Including Metaobject Blank Fallback</p>
     </header>
 
     <div class="legend">
       <div class="legend-item"><div class="legend-dot shared"></div> Shared Entry</div>
       <div class="legend-item"><div class="legend-dot metaobject"></div> Metaobject / Decision</div>
       <div class="legend-item"><div class="legend-dot static"></div> Static Path (Server)</div>
+      <div class="legend-item"><div class="legend-dot fallback"></div> Lazy Hydration Fallback</div>
       <div class="legend-item"><div class="legend-dot dynamic"></div> Dynamic Path (Client)</div>
       <div class="legend-item"><div class="legend-dot js"></div> JavaScript Runtime</div>
     </div>
@@ -476,14 +759,14 @@
       </div>
 
       <!-- ════════════════════════════════════════ -->
-      <!--  TWO COLUMNS                             -->
+      <!--  TWO MAIN COLUMNS                        -->
       <!-- ════════════════════════════════════════ -->
 
       <div class="columns">
 
-        <!-- ──────────────────────── -->
-        <!--  LEFT: STATIC / MANUAL  -->
-        <!-- ──────────────────────── -->
+        <!-- ═══════════════════════════════════════ -->
+        <!--  LEFT: STATIC / MANUAL COLUMN           -->
+        <!-- ═══════════════════════════════════════ -->
         <div class="column">
           <span class="column-header static">Static Path — Manual Products</span>
 
@@ -505,63 +788,115 @@
 
           <div class="connector"><div class="arrow-down green"></div></div>
 
-          <div class="node decision" style="min-width: 280px; max-width: 380px; border-color: var(--accent-green);">
-            <span class="node-tag metaobject">Decision</span>
-            <h3><code>product_section != blank?</code></h3>
-            <p>Does the metaobject have a valid schema?</p>
-          </div>
-
-          <div class="connector">
-            <span class="connector-label yes">Yes — has config</span>
-            <div class="arrow-down green"></div>
-          </div>
-
           <div class="node static">
             <span class="node-tag static">Server Render</span>
             <h3>Loop <code>collection.products</code></h3>
-            <p>Iterates products server-side. For each product, calls the static card renderer with the full Liquid product object.</p>
+            <p>Iterates products server-side. For each product, the metaobject config is checked before rendering.</p>
             <span class="file-ref">cards_product.liquid → lines 465–587</span>
           </div>
 
           <div class="connector"><div class="arrow-down green"></div></div>
 
-          <div class="node static">
-            <span class="node-tag static">Snippet Render</span>
-            <h3><code>card_product_card._static</code></h3>
-            <p>Receives <code>product</code> + <code>section</code> (metaobject config). Resolves variant, builds blocks content via <code>_render_blocks</code>.</p>
-            <span class="file-ref">card_product_card._static.liquid → lines 23–75</span>
+          <!-- ── DECISION 2: Metaobject blank check ── -->
+          <div class="node decision inline" style="border-color: var(--accent-yellow);">
+            <span class="node-tag metaobject">Decision — Per Product</span>
+            <h3><code>product_section != blank?</code></h3>
+            <p>Does the metaobject have a valid schema config?</p>
+            <span class="file-ref">cards_product.liquid → line 554</span>
           </div>
 
-          <div class="connector"><div class="arrow-down green"></div></div>
-
-          <div class="node static">
-            <span class="node-tag static">Block Dispatch</span>
-            <h3><code>card_product_card._render_blocks</code></h3>
-            <p>Iterates <code>section.block_order</code>, dispatches to typed <code>.static.liquid</code> files: image, price, labels, CTA, etc.</p>
-            <span class="file-ref">card_product_card._render_blocks.liquid → lines 2–79</span>
+          <!-- ── INNER SPLIT: yes/no metaobject ── -->
+          <div class="inner-split">
+            <div class="inner-split-bar"></div>
+            <div class="inner-split-arms">
+              <div class="split-arm">
+                <span class="connector-label yes">Yes — has config</span>
+                <div class="arrow-down green"></div>
+              </div>
+              <div class="split-arm">
+                <span class="connector-label fallback-label">No — blank</span>
+                <div class="arrow-down yellow"></div>
+              </div>
+            </div>
           </div>
 
-          <div class="connector"><div class="arrow-down green"></div></div>
+          <!-- ── TWO SUB-COLUMNS ── -->
+          <div class="sub-columns">
 
-          <div class="node static">
-            <span class="node-tag static">Bracket Notation</span>
-            <h3><code>_input.dynamic_content</code></h3>
-            <p>Resolves <code>[product.featured_image]</code> bracket notation <strong>server-side</strong>. Evaluates against the passed product/variant objects at render time.</p>
-            <span class="file-ref">_input.dynamic_content.liquid</span>
-          </div>
+            <!-- ── LEFT-LEFT: Full Static Render ── -->
+            <div class="sub-column">
 
-          <div class="connector"><div class="arrow-down green"></div></div>
+              <div class="node static">
+                <span class="node-tag static">Snippet Render</span>
+                <h3><code>card_product_card._static</code></h3>
+                <p>Receives <code>product</code> + <code>section</code> (metaobject config). Resolves variant, builds blocks content via <code>_render_blocks</code>.</p>
+                <span class="file-ref">card_product_card._static.liquid → lines 23–75</span>
+              </div>
 
-          <div class="node static final">
-            <span class="node-tag static">Output</span>
-            <h3>Complete HTML <code>&lt;article&gt;</code></h3>
-            <p>Full server-rendered markup. Zero JS needed for initial paint. SEO-friendly, no layout shift.</p>
-          </div>
-        </div>
+              <div class="connector"><div class="arrow-down green"></div></div>
 
-        <!-- ──────────────────────────── -->
-        <!--  RIGHT: DYNAMIC / RECENT    -->
-        <!-- ──────────────────────────── -->
+              <div class="node static">
+                <span class="node-tag static">Block Dispatch</span>
+                <h3><code>_render_blocks</code></h3>
+                <p>Iterates <code>section.block_order</code>, dispatches to typed <code>.static.liquid</code> files: image, price, labels, CTA, etc.</p>
+                <span class="file-ref">card_product_card._render_blocks.liquid</span>
+              </div>
+
+              <div class="connector"><div class="arrow-down green"></div></div>
+
+              <div class="node static">
+                <span class="node-tag static">Bracket Notation</span>
+                <h3><code>_input.dynamic_content</code></h3>
+                <p>Resolves <code>[product.featured_image]</code> bracket notation <strong>server-side</strong>. Evaluates against the passed product/variant objects.</p>
+                <span class="file-ref">_input.dynamic_content.liquid</span>
+              </div>
+
+              <div class="connector"><div class="arrow-down green"></div></div>
+
+              <div class="node static final">
+                <span class="node-tag static">Output</span>
+                <h3>Complete HTML <code>&lt;article&gt;</code></h3>
+                <p>Full server-rendered markup. Zero JS for initial paint. SEO-friendly, no layout shift.</p>
+              </div>
+            </div>
+
+            <!-- ── LEFT-RIGHT: Blank Metaobject Fallback ── -->
+            <div class="sub-column">
+
+              <div class="node fallback">
+                <span class="node-tag fallback">Fallback — Lazy Hydration</span>
+                <h3>Render Placeholder <code>&lt;div&gt;</code></h3>
+                <p>Outputs a <code>card-loading</code> div with <code>data-card-handle</code> and <code>data-product-handle</code>. No card HTML yet — just a skeleton.</p>
+                <span class="file-ref">cards_product.liquid → lines 566–575</span>
+              </div>
+
+              <div class="connector"><div class="arrow-down yellow"></div></div>
+
+              <div class="node fallback">
+                <span class="node-tag fallback">Inline JSON</span>
+                <h3><code>&lt;script data-product-data&gt;</code></h3>
+                <p>Product data embedded as JSON in a <code>&lt;script&gt;</code> tag alongside the placeholder. Available immediately — no fetch needed.</p>
+                <span class="file-ref">cards_product.liquid → lines 576–580</span>
+              </div>
+
+              <div class="connector"><div class="arrow-down yellow"></div></div>
+
+              <!-- ── MERGE POINTER ── -->
+              <div class="merge-pointer">
+                <div class="merge-badge">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h8m0 0L8 5m3 3L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Merges into shared hydration
+                </div>
+                <p>Same <code>hydrateProductCard($el)</code> entry point as the dynamic path. Product data comes from inline JSON instead of fetch.</p>
+              </div>
+            </div>
+
+          </div><!-- /sub-columns -->
+        </div><!-- /left column -->
+
+        <!-- ═══════════════════════════════════════ -->
+        <!--  RIGHT: DYNAMIC / RECENTLY VIEWED       -->
+        <!-- ═══════════════════════════════════════ -->
         <div class="column">
           <span class="column-header dynamic">Dynamic Path — Recently Viewed</span>
 
@@ -585,8 +920,8 @@
 
           <div class="node js">
             <span class="node-tag js">JavaScript — Client Side</span>
-            <h3><code>_product.initDynamicProductCards()</code></h3>
-            <p>Alpine <code>x-init</code> fires. JS reads <code>window._recent_products</code> (from localStorage) and begins hydrating product data.</p>
+            <h3><code>initDynamicProductCards()</code></h3>
+            <p>Alpine <code>x-init</code> fires. JS reads <code>window._recent_products</code> from localStorage and begins hydrating product data.</p>
             <span class="file-ref">product-data.ts → lines 230–293</span>
           </div>
 
@@ -623,11 +958,24 @@
 
           <div class="connector"><div class="arrow-down orange"></div></div>
 
-          <div class="node js">
-            <span class="node-tag js">Alpine Hydration</span>
-            <h3><code>_sections.hydrateProductCard($el)</code></h3>
-            <p>Each cloned card initializes via Alpine. Binds reactive state, resolves bracket notation client-side via <code>getDynamicValueWithFallbacks()</code>.</p>
+          <div class="node js" style="border: 2px solid var(--accent-orange); box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15), 0 0 0 1px rgba(245, 158, 11, 0.3);">
+            <span class="node-tag js">Shared Hydration</span>
+            <span class="converge-tag">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M13 8H5m0 0l3-3M5 8l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Lazy fallback enters here
+            </span>
+            <h3 style="margin-top: 10px;"><code>hydrateProductCard($el)</code></h3>
+            <p>Both paths converge here. Initializes Alpine on the card element. Reads product data from inline JSON <em>(lazy fallback)</em> or from cloned node data attributes <em>(dynamic)</em>. Resolves bracket notation client-side via <code>getDynamicValueWithFallbacks()</code>.</p>
             <span class="file-ref">card_product_card.ts → lines 7–50, 845</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down orange"></div></div>
+
+          <div class="node js">
+            <span class="node-tag js">Card Init</span>
+            <h3><code>initProductCard($el)</code></h3>
+            <p>Resolves product from inline JSON, in-memory cache, or fetches if missing. Sets up reactive Alpine state: variant selection, bracket notation via <code>getDynamicValue()</code>.</p>
+            <span class="file-ref">card_product_card.ts → lines 7–50</span>
           </div>
 
           <div class="connector"><div class="arrow-down red"></div></div>
@@ -635,7 +983,7 @@
           <div class="node dynamic final">
             <span class="node-tag dynamic">Output</span>
             <h3>Hydrated <code>&lt;div&gt;</code> (Client-Built)</h3>
-            <p>Visually identical card, but built in the browser. Reactive to variant changes. Requires JS. Layout shift on initial load.</p>
+            <p>Visually identical card, built in the browser. Reactive to variant changes. Requires JS. Layout shift on initial load.</p>
           </div>
         </div>
 
@@ -648,7 +996,7 @@
 
     <div class="outcome">
       <div class="outcome-card static-outcome">
-        <h4 style="color: var(--accent-green);">Static (Manual) Advantages</h4>
+        <h4 style="color: var(--accent-green);">Static (Manual + Config)</h4>
         <ul>
           <li>Full HTML at request time — zero JS dependency</li>
           <li>Fastest first contentful paint</li>
@@ -658,25 +1006,210 @@
           <li>Bracket notation resolved server-side</li>
         </ul>
       </div>
-      <div class="outcome-card dynamic-outcome">
-        <h4 style="color: var(--accent-red);">Dynamic (Recently Viewed) Advantages</h4>
+      <div class="outcome-card fallback-outcome">
+        <h4 style="color: var(--accent-yellow);">Lazy Hydration (Manual + Blank)</h4>
         <ul>
-          <li>Personalized per-visitor (localStorage data)</li>
-          <li>No server knowledge of browsing history needed</li>
+          <li>Product data IS server-embedded (inline JSON)</li>
+          <li>Only the card template is missing — no API fetch needed</li>
+          <li>Triggers on intersection (lazy) — defers JS cost</li>
+          <li>Merges into the same <code>hydrateProductCard</code> as dynamic</li>
+          <li>Common when metaobject not yet configured</li>
+          <li>Faster than full dynamic — skips data resolution</li>
+        </ul>
+      </div>
+      <div class="outcome-card dynamic-outcome">
+        <h4 style="color: var(--accent-red);">Full Dynamic (Recently Viewed)</h4>
+        <ul>
+          <li>No server HTML or data at all — fully client-driven</li>
+          <li>Personalized per-visitor (localStorage)</li>
           <li>Targeting algorithms (AI, price sort, etc.)</li>
-          <li>Reactive to variant changes via Alpine</li>
-          <li>Can mix sources with fallback chains</li>
-          <li>Products fetched & cached in IndexedDB</li>
+          <li>Products fetched from IndexedDB or API</li>
+          <li>Card nodes cloned from template, then hydrated</li>
+          <li>Highest JS cost, most layout shift</li>
         </ul>
       </div>
       <div class="outcome-card" style="border-color: var(--accent-purple);">
-        <h4 style="color: var(--accent-purple);">Why It Matters</h4>
+        <h4 style="color: var(--accent-purple);">Key Insight</h4>
         <ul style="list-style: none;">
-          <li style="padding-left: 0;">The <strong>same card metaobject</strong> powers both paths — the merchant designs the card once and the theme decides the render strategy based on the data source.</li>
-          <li style="padding-left: 0; margin-top: 8px;">Static = <em>"Shopify knows the products at request time"</em></li>
-          <li style="padding-left: 0;">Dynamic = <em>"Only the browser knows the products"</em></li>
+          <li style="padding-left: 0;">The <strong>same card metaobject</strong> powers all three paths — the merchant designs the card once and the theme picks the render strategy.</li>
+          <li style="padding-left: 0; margin-top: 12px;"><strong style="color: var(--accent-green);">Static</strong> = Shopify knows products + card config at request time</li>
+          <li style="padding-left: 0;"><strong style="color: var(--accent-yellow);">Lazy</strong> = Shopify knows products but card config is blank → merges into shared <code>hydrateProductCard</code></li>
+          <li style="padding-left: 0;"><strong style="color: var(--accent-red);">Dynamic</strong> = Only the browser knows the products → same <code>hydrateProductCard</code> after data resolution</li>
         </ul>
       </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  CSS LOADING SIDE FLOW                       -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="divider"></div>
+
+    <div class="css-section">
+      <div class="css-section-header">
+        <h2>How Card CSS Gets Loaded (Once, Not Per Card)</h2>
+        <p>Styles are compiled once per metaobject — individual card renders reference them by selector, never duplicate them.</p>
+      </div>
+
+      <div class="css-flow">
+
+        <div class="node css-node" style="min-width: 480px; text-align: center;">
+          <span class="node-tag css">CSS Entry — theme.liquid</span>
+          <h3><code>&lt;div data-cards-styles-section&gt;</code></h3>
+          <p><code>theme.liquid</code> renders <code>card_product_card._styles</code> <strong>once per page load</strong> inside a hidden div. This is the only place card CSS is output — never inside individual card renders.</p>
+          <span class="file-ref">layout/theme.liquid → lines 372–397</span>
+        </div>
+
+        <div class="connector"><div class="arrow-down cyan"></div></div>
+
+        <div class="node css-node" style="min-width: 480px; text-align: center;">
+          <span class="node-tag css">Compilation Loop</span>
+          <h3>Loop <code>metaobjects.product_cards.values</code></h3>
+          <p>Iterates <strong>every product card metaobject</strong> defined in the store. For each, extracts <code>card.schema.value</code> and compiles CSS for the section-level + each block in <code>block_order</code>.</p>
+          <span class="file-ref">card_product_card._styles.liquid → lines 125–152</span>
+        </div>
+
+        <div class="connector"><div class="arrow-down cyan"></div></div>
+
+        <div class="node css-node" style="min-width: 480px; text-align: center;">
+          <span class="node-tag css">Selector Replacement — <code>&amp; { }</code></span>
+          <h3><code>css | replace: '&amp;', selector</code></h3>
+          <p>CSS is written with <code>&amp;</code> placeholders. After concatenating <code>css + custom_css</code>, all <code>&amp;</code> are replaced with the scoped selector. Two selector types are generated:</p>
+          <div style="display: flex; gap: 12px; margin-top: 10px; justify-content: center; flex-wrap: wrap;">
+            <code style="font-size: 11px;">.product-card--{handle}</code>
+            <span style="color: var(--text-muted); font-size: 12px;">section-level</span>
+            <code style="font-size: 11px;">[data-style-id="{block_id}"]</code>
+            <span style="color: var(--text-muted); font-size: 12px;">block-level</span>
+          </div>
+          <span class="file-ref">card_product_card._styles.liquid → lines 130, 144</span>
+        </div>
+
+        <div class="connector"><div class="arrow-down cyan"></div></div>
+
+        <div class="node css-node" style="min-width: 480px; text-align: center;">
+          <span class="node-tag css">Single &lt;style&gt; Output</span>
+          <h3>One <code>&lt;style&gt;</code> tag for ALL card variants</h3>
+          <p>All metaobject cards' CSS is concatenated into a single <code>&lt;style&gt;</code> tag. Individual card renders (<code>_static.liquid</code>) output <strong>zero CSS</strong> — they only set <code>data-style-id</code> attributes that match the pre-compiled selectors.</p>
+          <span class="file-ref">card_product_card._styles.liquid → line 150</span>
+        </div>
+
+      </div><!-- /css-flow -->
+
+      <!-- ── Metaobject Missing Fallback ── -->
+      <div style="text-align: center; margin-top: 40px; margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 600;">CSS Fallback: When the Metaobject Doesn't Exist</h3>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">The <code>_styles.liquid</code> loop only covers existing metaobjects — so what styles a card whose metaobject is missing?</p>
+      </div>
+
+      <div class="css-flow">
+
+        <div class="node decision" style="min-width: 480px; border-color: var(--accent-cyan);">
+          <span class="node-tag css">Decision — card_product_card.liquid line 47</span>
+          <h3><code>metaobjects.product_cards[product_card] == blank?</code></h3>
+          <p>When the card section renders on <code>page=420420</code>, it checks if its own metaobject reference actually exists in the store.</p>
+          <span class="file-ref">card_product_card.liquid → line 47</span>
+        </div>
+
+        <div style="display: flex; gap: 32px; align-items: flex-start; justify-content: center; width: 100%; margin-top: 16px;">
+
+          <!-- EXISTS path -->
+          <div style="display: flex; flex-direction: column; align-items: center; max-width: 340px;">
+            <span class="connector-label yes" style="margin-bottom: 8px;">Exists</span>
+
+            <div class="node cache" style="text-align: center;">
+              <span class="node-tag cache">No inline styles needed</span>
+              <h3>Metaobject loop already compiled CSS</h3>
+              <p>The <code>_styles.liquid</code> metaobjects loop (above) already output this card's CSS. The card section renders <strong>zero</strong> <code>&lt;style&gt;</code> tags — its blocks just reference the pre-compiled selectors.</p>
+            </div>
+          </div>
+
+          <!-- MISSING path -->
+          <div style="display: flex; flex-direction: column; align-items: center; max-width: 420px;">
+            <span class="connector-label" style="color: var(--accent-yellow); background: rgba(251, 191, 36, 0.1); margin-bottom: 8px;">Missing / Blank</span>
+
+            <div class="node fallback">
+              <span class="node-tag fallback">Fallback — Inline &lt;style&gt;</span>
+              <h3>Card generates its own CSS</h3>
+              <p>Since the metaobjects loop skipped this card, the section generates a <code>&lt;style&gt;</code> tag inline from its direct settings: <code>text_color</code>, <code>background_color</code>, <code>custom_css</code>. Uses the same <code>&amp; → .product-card--{handle}</code> replacement.</p>
+              <span class="file-ref">card_product_card.liquid → lines 47–66</span>
+            </div>
+
+            <div class="connector"><div class="arrow-down yellow"></div></div>
+
+            <div class="node fallback">
+              <span class="node-tag fallback">Dedup — Move to Global Container</span>
+              <h3>Script moves <code>&lt;style&gt;</code> to <code>[data-cards-styles-section]</code></h3>
+              <p>An inline <code>&lt;script&gt;</code> immediately moves the generated <code>&lt;style&gt;</code> out of the card template and into the global styles container. This prevents CSS duplication when the card template is <strong>cloned</strong> for dynamic rendering — clones won't carry style tags.</p>
+              <div class="example" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(0,0,0,0.3); padding: 10px 12px; border-radius: 6px; color: var(--accent-cyan); line-height: 1.6; margin-top: 10px; text-align: left;">document.querySelectorAll(
+  `[data-product-card="${handle}"] style`
+).forEach(styleEl =>
+  document.querySelector(
+    '[data-cards-styles-section]'
+  )?.appendChild(styleEl)
+);</div>
+              <span class="file-ref">card_product_card.liquid → lines 110–115</span>
+            </div>
+
+            <div class="connector"><div class="arrow-down green"></div></div>
+
+            <div class="node cache" style="text-align: center;">
+              <span class="node-tag cache">Result</span>
+              <h3>CSS lives in global container, card template is style-free</h3>
+              <p>Safe to clone. Same end state as the metaobject path — one copy of CSS in <code>[data-cards-styles-section]</code>, cards reference via selectors.</p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div><!-- /css-flow fallback -->
+
+      <!-- ── data-style-id comparison ── -->
+      <div style="text-align: center; margin-top: 40px; margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 600;">How <code>data-style-id</code> Differs: Static vs Dynamic</h3>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Same compiled CSS, different selector assignment strategies</p>
+      </div>
+
+      <div class="css-comparison">
+
+        <div class="css-compare-card" style="border-color: var(--static-border);">
+          <h4><span style="color: var(--accent-green);">&#9679;</span> Static Cards</h4>
+          <div class="example">data-style-id="<span style="color: var(--accent-green);">block_id</span>"
+
+<span style="color: var(--text-muted);">// Example:</span>
+data-style-id="<span style="color: var(--accent-green);">abc123</span>"
+
+<span style="color: var(--text-muted);">// CSS selector compiled as:</span>
+[data-style-id="<span style="color: var(--accent-green);">abc123</span>"] { color: red; }</div>
+          <p><strong>Set in Liquid</strong> by <code>_render_blocks.liquid</code> (line 7). The <code>style_id</code> equals the <code>block_id</code> from the metaobject's <code>block_order</code>. Every static card using the same metaobject shares identical block IDs, so they all match the same CSS rules.</p>
+          <span class="file-ref" style="display: block; font-size: 10px; color: var(--text-muted); margin-top: 6px; font-family: monospace; opacity: 0.7;">card_product_card._render_blocks.liquid → line 7</span>
+        </div>
+
+        <div class="css-compare-card" style="border-color: var(--dynamic-border);">
+          <h4><span style="color: var(--accent-red);">&#9679;</span> Dynamic Cards</h4>
+          <div class="example">data-style-id="<span style="color: var(--accent-orange);">section_id</span>--<span style="color: var(--accent-red);">block_id</span>"
+
+<span style="color: var(--text-muted);">// Example:</span>
+data-style-id="<span style="color: var(--accent-orange);">sec_xyz</span>--<span style="color: var(--accent-red);">blk_789</span>"
+
+<span style="color: var(--text-muted);">// Set on wrapper div by JS:</span>
+div.setAttribute("data-style-id",
+  `${section_id}--${block_id}`);</div>
+          <p><strong>Set in JavaScript</strong> by <code>product-data.ts</code> (line 1149). The compound format <code>section_id--block_id</code> is set on the wrapper <code>&lt;div&gt;</code> that contains the cloned card. The inner card nodes inherit block-level styles from the cloned template's own <code>data-style-id</code> attributes.</p>
+          <span class="file-ref" style="display: block; font-size: 10px; color: var(--text-muted); margin-top: 6px; font-family: monospace; opacity: 0.7;">product-data.ts → line 1149</span>
+        </div>
+
+      </div><!-- /css-comparison -->
+
+    </div><!-- /css-section -->
+
+    <div class="divider"></div>
+
+    <div style="text-align: center;">
+      <a href="modal-swr-lazy-loading-flowchart.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h8m0 0L8 5m3 3L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Next: Modal &amp; Dynamic Card Lazy Loading (SWR)
+      </a>
     </div>
 
     <footer>
