@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modal &amp; Dynamic Card Lazy Loading — SWR Pipeline</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #222633;
+      --border: #2e3348;
+      --text: #e2e4ed;
+      --text-muted: #8b8fa7;
+      --accent-blue: #5b8def;
+      --accent-green: #4ade80;
+      --accent-orange: #f59e0b;
+      --accent-purple: #a78bfa;
+      --accent-red: #f87171;
+      --accent-cyan: #22d3ee;
+      --accent-yellow: #fbbf24;
+      --accent-pink: #f472b6;
+      --swr-bg: rgba(34, 211, 238, 0.08);
+      --swr-border: rgba(34, 211, 238, 0.25);
+      --liquid-bg: rgba(167, 139, 250, 0.08);
+      --liquid-border: rgba(167, 139, 250, 0.25);
+      --cache-bg: rgba(74, 222, 128, 0.08);
+      --cache-border: rgba(74, 222, 128, 0.25);
+      --fetch-bg: rgba(245, 158, 11, 0.08);
+      --fetch-border: rgba(245, 158, 11, 0.25);
+      --modal-bg: rgba(244, 114, 182, 0.08);
+      --modal-border: rgba(244, 114, 182, 0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    .container { max-width: 1440px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 48px; }
+    header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+    header p { color: var(--text-muted); font-size: 15px; }
+
+    .legend {
+      display: flex; justify-content: center; gap: 28px; margin-bottom: 40px; flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+    .legend-dot.liquid { background: var(--accent-purple); }
+    .legend-dot.swr { background: var(--accent-cyan); }
+    .legend-dot.cache { background: var(--accent-green); }
+    .legend-dot.fetch { background: var(--accent-orange); }
+    .legend-dot.modal { background: var(--accent-pink); }
+    .legend-dot.product { background: var(--accent-blue); }
+
+    /* ── Nodes ── */
+    .node {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px 24px; min-width: 280px; max-width: 420px; position: relative;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .node:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .node.liquid { background: var(--liquid-bg); border-color: var(--liquid-border); }
+    .node.swr { background: var(--swr-bg); border-color: var(--swr-border); }
+    .node.cache { background: var(--cache-bg); border-color: var(--cache-border); }
+    .node.fetch-node { background: var(--fetch-bg); border-color: var(--fetch-border); }
+    .node.modal { background: var(--modal-bg); border-color: var(--modal-border); }
+    .node.product-node { background: rgba(91, 141, 239, 0.08); border-color: rgba(91, 141, 239, 0.25); }
+    .node.wide { min-width: 500px; text-align: center; }
+    .node.decision { background: var(--surface-2); border-color: var(--accent-cyan); border-width: 2px; text-align: center; }
+
+    .node-tag {
+      display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.2px; padding: 3px 8px; border-radius: 4px; margin-bottom: 10px;
+    }
+    .node-tag.liquid { background: rgba(167, 139, 250, 0.15); color: var(--accent-purple); }
+    .node-tag.swr { background: rgba(34, 211, 238, 0.15); color: var(--accent-cyan); }
+    .node-tag.cache { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); }
+    .node-tag.fetch { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+    .node-tag.modal { background: rgba(244, 114, 182, 0.15); color: var(--accent-pink); }
+    .node-tag.product { background: rgba(91, 141, 239, 0.15); color: var(--accent-blue); }
+    .node-tag.shared { background: rgba(91, 141, 239, 0.15); color: var(--accent-blue); }
+
+    .node h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .node p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .node code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;
+      color: var(--accent-cyan);
+    }
+    .node .file-ref {
+      display: block; font-size: 11px; color: var(--text-muted); margin-top: 8px; opacity: 0.7;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    /* ── Connectors ── */
+    .connector { display: flex; flex-direction: column; align-items: center; padding: 6px 0; }
+    .connector-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
+      padding: 2px 10px; border-radius: 20px; margin: 2px 0;
+    }
+    .connector-label.yes { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
+    .connector-label.no { color: var(--accent-red); background: rgba(248, 113, 113, 0.1); }
+    .connector-label.stale { color: var(--accent-orange); background: rgba(245, 158, 11, 0.1); }
+    .connector-label.fresh { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
+    .connector-label.miss { color: var(--accent-red); background: rgba(248, 113, 113, 0.1); }
+
+    .arrow-down { width: 2px; height: 28px; background: var(--border); position: relative; }
+    .arrow-down::after {
+      content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+      border-left: 5px solid transparent; border-right: 5px solid transparent;
+      border-top: 6px solid var(--border);
+    }
+    .arrow-down.cyan { background: var(--accent-cyan); }
+    .arrow-down.cyan::after { border-top-color: var(--accent-cyan); }
+    .arrow-down.green { background: var(--accent-green); }
+    .arrow-down.green::after { border-top-color: var(--accent-green); }
+    .arrow-down.orange { background: var(--accent-orange); }
+    .arrow-down.orange::after { border-top-color: var(--accent-orange); }
+    .arrow-down.purple { background: var(--accent-purple); }
+    .arrow-down.purple::after { border-top-color: var(--accent-purple); }
+    .arrow-down.pink { background: var(--accent-pink); }
+    .arrow-down.pink::after { border-top-color: var(--accent-pink); }
+    .arrow-down.blue { background: var(--accent-blue); }
+    .arrow-down.blue::after { border-top-color: var(--accent-blue); }
+    .arrow-down.red { background: var(--accent-red); }
+    .arrow-down.red::after { border-top-color: var(--accent-red); }
+
+    /* ── Layout ── */
+    .flow { display: flex; flex-direction: column; align-items: center; }
+    .columns { display: flex; gap: 48px; align-items: flex-start; justify-content: center; width: 100%; }
+    .column { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+    .column-header {
+      font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 16px; padding: 6px 16px; border-radius: 20px;
+    }
+    .column-header.modal-col { color: var(--accent-pink); background: rgba(244, 114, 182, 0.1); }
+    .column-header.product-col { color: var(--accent-blue); background: rgba(91, 141, 239, 0.1); }
+
+    /* ── Splits ── */
+    .split-section { width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .split-bar { position: relative; width: 560px; height: 40px; }
+    .split-bar::before {
+      content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 12px; background: var(--border);
+    }
+    .split-bar::after {
+      content: ''; position: absolute; top: 12px; left: calc(50% - 280px); width: 560px; height: 2px;
+      background: var(--border);
+    }
+    .split-arms { display: flex; justify-content: center; gap: 280px; margin-top: -4px; }
+    .split-arm { display: flex; flex-direction: column; align-items: center; }
+
+    .inner-split-bar { position: relative; width: 360px; height: 36px; }
+    .inner-split-bar::before {
+      content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 10px; background: var(--border);
+    }
+    .inner-split-bar::after {
+      content: ''; position: absolute; top: 10px; left: calc(50% - 180px); width: 360px; height: 2px;
+      background: var(--border);
+    }
+    .inner-split-arms { display: flex; justify-content: center; gap: 120px; margin-top: -4px; }
+
+    /* ── Section divider ── */
+    .divider { width: 100%; max-width: 800px; height: 1px; background: var(--border); margin: 48px auto; }
+
+    /* ── Section headers ── */
+    .section-header { text-align: center; margin-bottom: 32px; margin-top: 8px; }
+    .section-header h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .section-header p { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Modals list ── */
+    .modals-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px; width: 100%; max-width: 800px; margin: 24px auto;
+    }
+    .modal-chip {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 14px; font-size: 12px;
+    }
+    .modal-chip strong { color: var(--accent-pink); font-size: 13px; }
+    .modal-chip span { display: block; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── TTL Table ── */
+    .ttl-table { width: 100%; max-width: 800px; margin: 24px auto; border-collapse: collapse; }
+    .ttl-table th, .ttl-table td {
+      text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border);
+    }
+    .ttl-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; }
+    .ttl-table td code {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; color: var(--accent-cyan);
+    }
+
+    /* ── Nav link ── */
+    .nav-link {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border); color: var(--accent-blue);
+      text-decoration: none; font-size: 13px; font-weight: 600;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .nav-link:hover { background: rgba(91, 141, 239, 0.08); border-color: var(--accent-blue); }
+
+    footer { margin-top: 56px; text-align: center; color: var(--text-muted); font-size: 12px; opacity: 0.5; }
+
+    @media (max-width: 1100px) {
+      .columns { flex-direction: column; align-items: center; gap: 40px; }
+      .split-bar, .inner-split-bar { display: none; }
+      .split-arms, .inner-split-arms { display: none; }
+      .node { min-width: 280px; max-width: 90vw; }
+      .node.wide { min-width: 280px; }
+    }
+    @media print {
+      body { background: #fff; color: #111; padding: 20px; }
+      .node { border-color: #ccc; background: #f9f9f9; }
+      .node p, .node .file-ref { color: #555; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div style="text-align: center; margin-bottom: 8px;">
+      <a href="product-card-rendering-flowchart-v2.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 8H5m0 0l3-3M5 8l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back: Product Card Rendering Flow (v2)
+      </a>
+    </div>
+
+    <header>
+      <h1>Modal &amp; Dynamic Card Lazy Loading</h1>
+      <p>The <code>current_page</code> hack, SWR caching pipeline, and how modals + card templates get loaded efficiently</p>
+    </header>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot liquid"></div> Liquid / Server</div>
+      <div class="legend-item"><div class="legend-dot swr"></div> SWR Controller</div>
+      <div class="legend-item"><div class="legend-dot cache"></div> Cache Hit</div>
+      <div class="legend-item"><div class="legend-dot fetch"></div> Network Fetch</div>
+      <div class="legend-item"><div class="legend-dot modal"></div> Modal / DOM</div>
+      <div class="legend-item"><div class="legend-dot product"></div> Product Data</div>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  SECTION 1: THE LIQUID LOADING PIPELINE      -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="section-header">
+      <h2>Section 1: The Liquid Loading Pipeline</h2>
+      <p>How <code>theme.liquid</code> uses <code>current_page</code> to serve modal + card HTML without a real page render</p>
+    </div>
+
+    <div class="flow">
+
+      <div class="node liquid wide">
+        <span class="node-tag liquid">Trigger — _layout.load_dynamic_modals</span>
+        <h3>User Intent or Idle Callback</h3>
+        <p>Loading is triggered by <strong>user intent</strong> (pointerover, touchstart, focusin) or <strong>idle callback</strong> after 1.5s. Whichever fires first wins.</p>
+        <span class="file-ref">_layout.load_dynamic_modals.liquid → lines 121–133</span>
+      </div>
+
+      <div class="connector"><div class="arrow-down purple"></div></div>
+
+      <div class="node swr wide">
+        <span class="node-tag swr">SWR Controller — loadModalsNow()</span>
+        <h3>Check Cache Storage API First</h3>
+        <p>Before fetching, checks <code>caches.open("platter-modals--{version}")</code> for a cached HTML response. Reads both the HTML and a metadata entry containing the timestamp.</p>
+        <span class="file-ref">_layout.load_dynamic_modals.liquid → lines 64–97</span>
+      </div>
+
+      <div class="connector"><div class="arrow-down cyan"></div></div>
+
+      <div class="node decision" style="min-width: 400px;">
+        <span class="node-tag swr">SWR Decision</span>
+        <h3>Cache state?</h3>
+        <p>Three possible states based on Cache Storage API lookup</p>
+      </div>
+
+      <!-- ── THREE-WAY SPLIT ── -->
+      <div class="split-section">
+        <div style="position: relative; width: 700px; height: 40px;">
+          <div style="position: absolute; top: 0; left: 50%; width: 2px; height: 12px; background: var(--border);"></div>
+          <div style="position: absolute; top: 12px; left: calc(50% - 350px); width: 700px; height: 2px; background: var(--border);"></div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 140px; margin-top: -4px;">
+          <div class="split-arm">
+            <span class="connector-label fresh">Fresh hit</span>
+            <div class="arrow-down green"></div>
+          </div>
+          <div class="split-arm">
+            <span class="connector-label stale">Stale hit (&gt;15m)</span>
+            <div class="arrow-down orange"></div>
+          </div>
+          <div class="split-arm">
+            <span class="connector-label miss">Cache miss</span>
+            <div class="arrow-down red"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="columns" style="gap: 32px;">
+
+        <!-- ── FRESH HIT ── -->
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-green); background: rgba(74, 222, 128, 0.1);">Fresh</span>
+
+          <div class="node cache">
+            <span class="node-tag cache">Instant</span>
+            <h3>Inject cached HTML</h3>
+            <p>HTML served directly from Cache Storage. No network request. Fastest path.</p>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node modal" style="text-align: center;">
+            <span class="node-tag modal">Done</span>
+            <h3>Modals Ready</h3>
+          </div>
+        </div>
+
+        <!-- ── STALE HIT ── -->
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-orange); background: rgba(245, 158, 11, 0.1);">Stale (SWR)</span>
+
+          <div class="node cache">
+            <span class="node-tag cache">Serve Stale</span>
+            <h3>Inject cached HTML immediately</h3>
+            <p>User sees modals instantly from stale cache. No waiting.</p>
+          </div>
+
+          <div class="connector"><div class="arrow-down orange"></div></div>
+
+          <div class="node fetch-node">
+            <span class="node-tag fetch">Background Revalidate</span>
+            <h3>Fetch fresh in background</h3>
+            <p><code>revalidateInBackground()</code> fetches <code>/collections?page=420420</code>. If HTML differs from cached, updates cache + re-injects DOM.</p>
+            <span class="file-ref">_layout.load_dynamic_modals.liquid</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node cache">
+            <span class="node-tag cache">Update Cache</span>
+            <h3>Write fresh HTML + timestamp</h3>
+            <p>Stores new response + <code>{ ts: Date.now() }</code> metadata to Cache Storage for next load.</p>
+          </div>
+        </div>
+
+        <!-- ── CACHE MISS ── -->
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-red); background: rgba(248, 113, 113, 0.1);">Miss</span>
+
+          <div class="node fetch-node">
+            <span class="node-tag fetch">Blocking Fetch</span>
+            <h3><code>fetch("/collections?page=420420")</code></h3>
+            <p>First visit — no cache exists. Fetches the special collection URL. Shopify returns modal + card HTML instead of a real collection page.</p>
+            <span class="file-ref">_layout.load_dynamic_modals.liquid</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down purple"></div></div>
+
+          <div class="node liquid">
+            <span class="node-tag liquid">The current_page Hack</span>
+            <h3><code>theme.liquid</code> detects <code>current_page == 420420</code></h3>
+            <p>Instead of rendering a collection, Liquid renders <code>{% sections '0_modal' %}</code> and <code>{% sections '0_card' %}</code> — hidden section groups containing all modals and card templates.</p>
+            <span class="file-ref">layout/theme.liquid → lines 1–13</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down pink"></div></div>
+
+          <div class="node modal">
+            <span class="node-tag modal">Inject + Cache</span>
+            <h3>Inject HTML, write to Cache Storage</h3>
+            <p>DOM injection + cache write happen in parallel. Next page load will hit the cache.</p>
+          </div>
+        </div>
+
+      </div><!-- /columns -->
+    </div><!-- /flow -->
+
+    <!-- ── What gets loaded ── -->
+    <div class="divider"></div>
+
+    <div class="section-header">
+      <h2>What Gets Loaded via <code>current_page == 420420</code></h2>
+      <p>Two section groups: <code>0_modal</code> (interactive modals) and <code>0_card</code> (card templates + styles)</p>
+    </div>
+
+    <div class="modals-grid">
+      <div class="modal-chip"><strong>Cart Drawer</strong><span>main_cart + progress bar, total, checkout</span></div>
+      <div class="modal-chip"><strong>Search Modal</strong><span>Predictive search, product results, suggestions</span></div>
+      <div class="modal-chip"><strong>Quick View</strong><span>modal_quick_view — fetches full product page</span></div>
+      <div class="modal-chip"><strong>Media Gallery</strong><span>modal_media_gallery — product images/video</span></div>
+      <div class="modal-chip"><strong>Country Selector</strong><span>modal_country_selector — localization</span></div>
+      <div class="modal-chip"><strong>Dynamic Product</strong><span>modal_dynamic_product — reusable PDP modal</span></div>
+      <div class="modal-chip"><strong>Sidebar Menu</strong><span>modal_sidebar_menu — mobile navigation</span></div>
+      <div class="modal-chip"><strong>Card Templates</strong><span>Product, collection, line item card HTML for cloning</span></div>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  SECTION 2: DOM INJECTION & INITIALIZATION   -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="divider"></div>
+
+    <div class="section-header">
+      <h2>Section 2: DOM Injection &amp; Initialization</h2>
+      <p>After HTML arrives (from cache or fetch), how modals and card templates become interactive</p>
+    </div>
+
+    <div class="flow">
+
+      <div class="node modal wide">
+        <span class="node-tag modal">DOM Injection — injectModals()</span>
+        <h3><code>modalsContainer.innerHTML = html</code></h3>
+        <p>Raw HTML is injected into the <code>[data-dynamic-modals]</code> container. Dispatches <code>"modalsLoading"</code> event before and <code>"modalsLoaded"</code> after. Sets <code>window.modalsLoaded = true</code>.</p>
+        <span class="file-ref">_layout.load_dynamic_modals.liquid</span>
+      </div>
+
+      <div class="connector"><div class="arrow-down pink"></div></div>
+
+      <div class="node modal wide">
+        <span class="node-tag modal">Alpine Initialization</span>
+        <h3><code>window.initDeferredComponents()</code></h3>
+        <p>Initializes all Alpine <code>x-data</code> components within the injected HTML. Wires up modal store, cart drawer, search, quick view, and all card template nodes.</p>
+      </div>
+
+      <div class="connector"><div class="arrow-down pink"></div></div>
+
+      <div class="node modal wide">
+        <span class="node-tag modal">Event Handler Wiring — initEvents()</span>
+        <h3>Bind modal triggers to <code>modalStore.setId()</code></h3>
+        <p>Scans for <code>[href*="#modal--"]</code>, <code>[href*="#drawer--"]</code>, <code>[href*="#popup--"]</code>, <code>[data-megamenu-handle]</code> and attaches click handlers that toggle the Alpine modal store.</p>
+        <span class="file-ref">modals.ts → lines 172–242</span>
+      </div>
+
+      <div class="connector"><div class="arrow-down"></div></div>
+
+      <!-- Split: Modal interaction vs Card template usage -->
+      <div class="split-section">
+        <div class="split-bar" style="width: 560px;">
+          <div style="position: absolute; top: 0; left: 50%; width: 2px; height: 12px; background: var(--border);"></div>
+          <div style="position: absolute; top: 12px; left: calc(50% - 280px); width: 560px; height: 2px; background: var(--border);"></div>
+        </div>
+        <div class="split-arms" style="gap: 280px;">
+          <div class="split-arm">
+            <span class="connector-label" style="color: var(--accent-pink); background: rgba(244, 114, 182, 0.1);">Modal opened</span>
+            <div class="arrow-down pink"></div>
+          </div>
+          <div class="split-arm">
+            <span class="connector-label" style="color: var(--accent-blue); background: rgba(91, 141, 239, 0.1);">Card template cloned</span>
+            <div class="arrow-down blue"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="columns">
+
+        <!-- ── Modal interaction ── -->
+        <div class="column">
+          <span class="column-header modal-col">Modal Interaction</span>
+
+          <div class="node modal">
+            <span class="node-tag modal">modalStore.setId(handle)</span>
+            <h3>Open Modal / Drawer</h3>
+            <p>Sets <code>$store.modal.id</code> which triggers Alpine reactivity. If product data is attached (quick view), calls <code>getHydratedProductData()</code> to ensure fresh data.</p>
+            <span class="file-ref">modals.ts → lines 34–46</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down pink"></div></div>
+
+          <div class="node modal">
+            <span class="node-tag modal">Quick View (Special Case)</span>
+            <h3><code>utils.fetchFromCache(productUrl)</code></h3>
+            <p>Quick view fetches the full product page HTML. Checks: <strong>1.</strong> Barba cache <strong>2.</strong> IndexedDB <strong>3.</strong> Fetch with <code>cache: "force-cache"</code>. Extracts product form + JSON, injects into modal container.</p>
+            <span class="file-ref">quick-view.ts → lines 19–140</span>
+          </div>
+        </div>
+
+        <!-- ── Card template cloning ── -->
+        <div class="column">
+          <span class="column-header product-col">Card Template Usage</span>
+
+          <div class="node product-node">
+            <span class="node-tag product">Template Source Nodes</span>
+            <h3>Hidden card HTML in <code>0_card</code> section group</h3>
+            <p>Card templates are rendered inside <code>&lt;div data-cards-section class="!hidden"&gt;</code>. Dynamic product cards clone these nodes via <code>source_node.cloneNode(true)</code>.</p>
+            <span class="file-ref">theme.liquid → line 8</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down blue"></div></div>
+
+          <div class="node product-node">
+            <span class="node-tag product">Fallback Queue</span>
+            <h3><code>fallbackHydrationQueue</code></h3>
+            <p>If a card placeholder tries to hydrate before modals are loaded (template not yet in DOM), it's queued. Once <code>"modalsLoaded"</code> fires, the queue is processed and all pending cards hydrate.</p>
+            <span class="file-ref">utils.ts → hydrateCardContent()</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  SECTION 3: PRODUCT DATA SWR                 -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="divider"></div>
+
+    <div class="section-header">
+      <h2>Section 3: Product Data — SWR Caching (IndexedDB)</h2>
+      <p>How individual product data is cached and revalidated across page loads</p>
+    </div>
+
+    <div class="flow">
+
+      <div class="node product-node wide">
+        <span class="node-tag product">Entry — getHydratedProductData(handle)</span>
+        <h3>Three-Tier Cascade</h3>
+        <p>Called whenever a card or modal needs full product data. Tries three sources in order, returning the fastest available data while revalidating in background.</p>
+        <span class="file-ref">product-data.ts → lines 196–211</span>
+      </div>
+
+      <div class="connector"><div class="arrow-down blue"></div></div>
+
+      <div class="columns" style="gap: 32px;">
+
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-green); background: rgba(74, 222, 128, 0.1);">Tier 1: In-Memory</span>
+
+          <div class="node cache">
+            <span class="node-tag cache">getHtmlProduct(handle)</span>
+            <h3>Check <code>window._products</code> + inline JSON</h3>
+            <p><strong>Synchronous.</strong> Checks the in-memory product map, then looks for <code>&lt;script data-product-data&gt;</code> tags in the DOM. Fastest possible — no async.</p>
+            <span class="file-ref">product-data.ts → lines 10–44</span>
+          </div>
+        </div>
+
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-blue); background: rgba(91, 141, 239, 0.1);">Tier 2: IndexedDB</span>
+
+          <div class="node product-node">
+            <span class="node-tag product">getCachedProduct(handle)</span>
+            <h3>Check IndexedDB via <code>idb-keyval</code></h3>
+            <p><strong>Async.</strong> Key: <code>_{themeId}-product--{handle}</code>. Returns cached data immediately. If <code>_updated_at</code> is &gt;15min old, triggers a <strong>low-priority background fetch</strong> to revalidate.</p>
+            <span class="file-ref">product-data.ts → lines 45–72</span>
+          </div>
+        </div>
+
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-orange); background: rgba(245, 158, 11, 0.1);">Tier 3: Network</span>
+
+          <div class="node fetch-node">
+            <span class="node-tag fetch">getFetchProduct(handle)</span>
+            <h3>Fetch from Shopify Recommendations API</h3>
+            <p><code>/recommendations/products?product_id=...&section_id=data_product_json</code>. Returns product + related products. Stores all to IndexedDB via <code>requestIdleCallback</code>.</p>
+            <span class="file-ref">product-data.ts → lines 73–152</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="connector" style="margin-top: 16px;"><div class="arrow-down blue"></div></div>
+
+      <div class="node product-node wide">
+        <span class="node-tag product">Persist — saveProduct(handle)</span>
+        <h3>Debounced IndexedDB Write</h3>
+        <p>Uses <code>requestIdleCallback</code> with sequence tracking to handle rapid updates. Loops until all pending mutations are persisted. Prevents duplicate <code>idbKeyval.set()</code> calls.</p>
+        <span class="file-ref">product-data.ts → lines 153–195</span>
+      </div>
+
+    </div>
+
+    <!-- ── TTL Table ── -->
+    <div style="text-align: center; margin-top: 32px; margin-bottom: 8px;">
+      <h3 style="font-size: 16px; font-weight: 600;">Cache TTLs &amp; Invalidation</h3>
+    </div>
+
+    <table class="ttl-table">
+      <thead>
+        <tr>
+          <th>Layer</th>
+          <th>TTL</th>
+          <th>Key / Storage</th>
+          <th>Revalidation Trigger</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Modal HTML</td>
+          <td>15 minutes</td>
+          <td><code>caches.open("platter-modals--{ver}")</code></td>
+          <td>Stale check on metadata <code>.ts</code> timestamp</td>
+        </tr>
+        <tr>
+          <td>Product Data (IndexedDB)</td>
+          <td>15 minutes</td>
+          <td><code>_{themeId}-product--{handle}</code></td>
+          <td><code>_updated_at</code> check in <code>getCachedProduct()</code></td>
+        </tr>
+        <tr>
+          <td>Recommendations</td>
+          <td>30 minutes</td>
+          <td><code>_recommendations_loaded_at</code> field</td>
+          <td>Check in <code>getHydratedProductData()</code></td>
+        </tr>
+        <tr>
+          <td>In-Memory (<code>_products</code>)</td>
+          <td>Session</td>
+          <td><code>window._products</code></td>
+          <td>Page reload clears</td>
+        </tr>
+        <tr>
+          <td>Search Results</td>
+          <td>Session</td>
+          <td><code>sessionStorage._platter---cached-search</code></td>
+          <td>Tab close clears</td>
+        </tr>
+        <tr>
+          <td>Recent Products</td>
+          <td>Persistent</td>
+          <td><code>localStorage._recent_products_storage</code></td>
+          <td>Manual (version bump clears all)</td>
+        </tr>
+        <tr>
+          <td style="color: var(--accent-red); font-weight: 600;">Full Cache Bust</td>
+          <td style="color: var(--accent-red);">Manual</td>
+          <td><code>settings.development__cache_version</code></td>
+          <td>Version change clears: Cache API + localStorage + sessionStorage + IndexedDB</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <div style="text-align: center;">
+      <a href="product-card-rendering-flowchart-v2.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 8H5m0 0l3-3M5 8l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back: Product Card Rendering Flow (v2)
+      </a>
+    </div>
+
+    <footer>
+      Accelerate-Z Training — Modal &amp; Lazy Loading SWR Pipeline — Platter Internal
+    </footer>
+
+  </div>
+</body>
+</html>

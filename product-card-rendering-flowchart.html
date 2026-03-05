@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Card Rendering — Static vs Dynamic Flow</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #222633;
+      --border: #2e3348;
+      --text: #e2e4ed;
+      --text-muted: #8b8fa7;
+      --accent-blue: #5b8def;
+      --accent-green: #4ade80;
+      --accent-orange: #f59e0b;
+      --accent-purple: #a78bfa;
+      --accent-red: #f87171;
+      --accent-cyan: #22d3ee;
+      --static-bg: rgba(74, 222, 128, 0.08);
+      --static-border: rgba(74, 222, 128, 0.25);
+      --dynamic-bg: rgba(248, 113, 113, 0.08);
+      --dynamic-border: rgba(248, 113, 113, 0.25);
+      --shared-bg: rgba(91, 141, 239, 0.08);
+      --shared-border: rgba(91, 141, 239, 0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .legend-dot.static { background: var(--accent-green); }
+    .legend-dot.dynamic { background: var(--accent-red); }
+    .legend-dot.shared { background: var(--accent-blue); }
+    .legend-dot.js { background: var(--accent-orange); }
+    .legend-dot.metaobject { background: var(--accent-purple); }
+
+    /* ── Flow Layout ── */
+
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 64px;
+      width: 100%;
+      position: relative;
+    }
+
+    /* ── Nodes ── */
+
+    .node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      min-width: 280px;
+      max-width: 380px;
+      position: relative;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .node:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .node.entry {
+      background: var(--shared-bg);
+      border-color: var(--shared-border);
+      text-align: center;
+      min-width: 420px;
+    }
+
+    .node.decision {
+      background: var(--surface-2);
+      border-color: var(--accent-purple);
+      border-width: 2px;
+      text-align: center;
+      min-width: 460px;
+      transform: none;
+    }
+
+    .node.decision:hover {
+      transform: translateY(-2px);
+    }
+
+    .node.static {
+      background: var(--static-bg);
+      border-color: var(--static-border);
+    }
+
+    .node.dynamic {
+      background: var(--dynamic-bg);
+      border-color: var(--dynamic-border);
+    }
+
+    .node.js {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.25);
+    }
+
+    .node.final {
+      text-align: center;
+    }
+
+    .node-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .node-tag.static { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); }
+    .node-tag.dynamic { background: rgba(248, 113, 113, 0.15); color: var(--accent-red); }
+    .node-tag.shared { background: rgba(91, 141, 239, 0.15); color: var(--accent-blue); }
+    .node-tag.js { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+    .node-tag.metaobject { background: rgba(167, 139, 250, 0.15); color: var(--accent-purple); }
+
+    .node h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .node p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .node code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 11.5px;
+      background: rgba(255,255,255,0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent-cyan);
+    }
+
+    .node .file-ref {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      opacity: 0.7;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    /* ── Connectors ── */
+
+    .connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 0;
+    }
+
+    .connector svg {
+      display: block;
+    }
+
+    .connector-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin: 2px 0;
+    }
+
+    .connector-label.yes { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
+    .connector-label.no { color: var(--accent-red); background: rgba(248, 113, 113, 0.1); }
+    .connector-label.then { color: var(--accent-blue); background: rgba(91, 141, 239, 0.1); }
+
+    .arrow-down {
+      width: 2px;
+      height: 28px;
+      background: var(--border);
+      position: relative;
+    }
+
+    .arrow-down::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid var(--border);
+    }
+
+    .arrow-down.green { background: var(--accent-green); }
+    .arrow-down.green::after { border-top-color: var(--accent-green); }
+    .arrow-down.red { background: var(--accent-red); }
+    .arrow-down.red::after { border-top-color: var(--accent-red); }
+    .arrow-down.blue { background: var(--accent-blue); }
+    .arrow-down.blue::after { border-top-color: var(--accent-blue); }
+    .arrow-down.orange { background: var(--accent-orange); }
+    .arrow-down.orange::after { border-top-color: var(--accent-orange); }
+
+    /* ── Split Connector ── */
+
+    .split-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .split-bar {
+      position: relative;
+      width: 620px;
+      height: 40px;
+    }
+
+    .split-bar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 2px;
+      height: 12px;
+      background: var(--border);
+    }
+
+    .split-bar::after {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: calc(50% - 310px);
+      width: 620px;
+      height: 2px;
+      background: var(--border);
+    }
+
+    .split-arms {
+      display: flex;
+      justify-content: center;
+      gap: 340px;
+      margin-top: -4px;
+    }
+
+    .split-arm {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Columns ── */
+
+    .columns {
+      display: flex;
+      gap: 64px;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      flex: 0 0 auto;
+    }
+
+    .column-header {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 16px;
+      padding: 6px 16px;
+      border-radius: 20px;
+    }
+
+    .column-header.static { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
+    .column-header.dynamic { color: var(--accent-red); background: rgba(248, 113, 113, 0.1); }
+
+    /* ── Outcome Box ── */
+
+    .outcome {
+      margin-top: 48px;
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .outcome-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 320px;
+      text-align: center;
+    }
+
+    .outcome-card h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .outcome-card ul {
+      list-style: none;
+      text-align: left;
+    }
+
+    .outcome-card li {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 3px 0;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .outcome-card li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .outcome-card.static-outcome li::before { background: var(--accent-green); }
+    .outcome-card.dynamic-outcome li::before { background: var(--accent-red); }
+
+    /* ── Footer ── */
+
+    footer {
+      margin-top: 56px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      opacity: 0.5;
+    }
+
+    /* ── Responsive ── */
+
+    @media (max-width: 900px) {
+      .columns { flex-direction: column; align-items: center; gap: 24px; }
+      .split-bar { display: none; }
+      .split-arms { display: none; }
+      .flow-row { flex-direction: column; align-items: center; gap: 24px; }
+      .node { min-width: 280px; max-width: 90vw; }
+      .node.entry, .node.decision { min-width: 280px; }
+    }
+
+    @media print {
+      body { background: #fff; color: #111; padding: 20px; }
+      .node { border-color: #ccc; background: #f9f9f9; }
+      .node p, .node .file-ref { color: #555; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Product Card Rendering Flow</h1>
+      <p>Static (Manually Selected) vs Dynamic (Recently Viewed) — Entry Point Comparison</p>
+    </header>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot shared"></div> Shared Entry</div>
+      <div class="legend-item"><div class="legend-dot metaobject"></div> Metaobject / Decision</div>
+      <div class="legend-item"><div class="legend-dot static"></div> Static Path (Server)</div>
+      <div class="legend-item"><div class="legend-dot dynamic"></div> Dynamic Path (Client)</div>
+      <div class="legend-item"><div class="legend-dot js"></div> JavaScript Runtime</div>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  FLOW START                                  -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="flow">
+
+      <!-- ── ENTRY: Shared Block ── -->
+      <div class="node entry">
+        <span class="node-tag shared">Entry Point — Shared</span>
+        <h3>cards_product Block</h3>
+        <p>Both paths start here. Merchant configures <code>primary_source</code> and <code>product_card_class</code> in the Theme Editor.</p>
+        <span class="file-ref">blocks/cards_product/cards_product.liquid</span>
+      </div>
+
+      <div class="connector"><div class="arrow-down"></div></div>
+
+      <!-- ── DECISION 1: Source Type ── -->
+      <div class="node decision">
+        <span class="node-tag metaobject">Decision — Line 76</span>
+        <h3>What is <code>primary_source</code>?</h3>
+        <p>The block checks <code>source_array</code> to determine the rendering strategy.</p>
+        <span class="file-ref">cards_product.liquid → lines 74–82</span>
+      </div>
+
+      <!-- ── SPLIT INTO TWO COLUMNS ── -->
+      <div class="split-section">
+        <div class="split-bar"></div>
+        <div class="split-arms">
+          <div class="split-arm">
+            <span class="connector-label yes">manual</span>
+            <div class="arrow-down green"></div>
+          </div>
+          <div class="split-arm">
+            <span class="connector-label no">recently_viewed</span>
+            <div class="arrow-down red"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════ -->
+      <!--  TWO COLUMNS                             -->
+      <!-- ════════════════════════════════════════ -->
+
+      <div class="columns">
+
+        <!-- ──────────────────────── -->
+        <!--  LEFT: STATIC / MANUAL  -->
+        <!-- ──────────────────────── -->
+        <div class="column">
+          <span class="column-header static">Static Path — Manual Products</span>
+
+          <div class="node static">
+            <span class="node-tag static">Liquid — Server Side</span>
+            <h3><code>is_dynamic = false</code></h3>
+            <p>Source is <code>"manual"</code> — products come from the collection or a merchant-selected product list. Shopify provides full product objects at render time.</p>
+            <span class="file-ref">cards_product.liquid → line 80</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node static">
+            <span class="node-tag metaobject">Metaobject Lookup</span>
+            <h3><code>product_card_class.schema.value</code></h3>
+            <p>Extracts the full card config (blocks, settings, block_order) from the merchant's selected <code>product_cards</code> metaobject.</p>
+            <span class="file-ref">cards_product.liquid → line 450</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node decision" style="min-width: 280px; max-width: 380px; border-color: var(--accent-green);">
+            <span class="node-tag metaobject">Decision</span>
+            <h3><code>product_section != blank?</code></h3>
+            <p>Does the metaobject have a valid schema?</p>
+          </div>
+
+          <div class="connector">
+            <span class="connector-label yes">Yes — has config</span>
+            <div class="arrow-down green"></div>
+          </div>
+
+          <div class="node static">
+            <span class="node-tag static">Server Render</span>
+            <h3>Loop <code>collection.products</code></h3>
+            <p>Iterates products server-side. For each product, calls the static card renderer with the full Liquid product object.</p>
+            <span class="file-ref">cards_product.liquid → lines 465–587</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node static">
+            <span class="node-tag static">Snippet Render</span>
+            <h3><code>card_product_card._static</code></h3>
+            <p>Receives <code>product</code> + <code>section</code> (metaobject config). Resolves variant, builds blocks content via <code>_render_blocks</code>.</p>
+            <span class="file-ref">card_product_card._static.liquid → lines 23–75</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node static">
+            <span class="node-tag static">Block Dispatch</span>
+            <h3><code>card_product_card._render_blocks</code></h3>
+            <p>Iterates <code>section.block_order</code>, dispatches to typed <code>.static.liquid</code> files: image, price, labels, CTA, etc.</p>
+            <span class="file-ref">card_product_card._render_blocks.liquid → lines 2–79</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node static">
+            <span class="node-tag static">Bracket Notation</span>
+            <h3><code>_input.dynamic_content</code></h3>
+            <p>Resolves <code>[product.featured_image]</code> bracket notation <strong>server-side</strong>. Evaluates against the passed product/variant objects at render time.</p>
+            <span class="file-ref">_input.dynamic_content.liquid</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node static final">
+            <span class="node-tag static">Output</span>
+            <h3>Complete HTML <code>&lt;article&gt;</code></h3>
+            <p>Full server-rendered markup. Zero JS needed for initial paint. SEO-friendly, no layout shift.</p>
+          </div>
+        </div>
+
+        <!-- ──────────────────────────── -->
+        <!--  RIGHT: DYNAMIC / RECENT    -->
+        <!-- ──────────────────────────── -->
+        <div class="column">
+          <span class="column-header dynamic">Dynamic Path — Recently Viewed</span>
+
+          <div class="node dynamic">
+            <span class="node-tag dynamic">Liquid — Flag Only</span>
+            <h3><code>is_dynamic = true</code></h3>
+            <p>Source contains <code>"recently_viewed"</code> — products are unknown at server time (stored in localStorage). Liquid can only set up the JS entry point.</p>
+            <span class="file-ref">cards_product.liquid → line 76</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down red"></div></div>
+
+          <div class="node dynamic">
+            <span class="node-tag dynamic">Liquid → JS Bridge</span>
+            <h3>Render <code>&lt;script x-init&gt;</code></h3>
+            <p>Outputs a script tag that passes all block config to JS: <code>source_array</code>, <code>product_card_class</code>, targeting type, display limits, filters.</p>
+            <span class="file-ref">cards_product.liquid → lines 386–415</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down orange"></div></div>
+
+          <div class="node js">
+            <span class="node-tag js">JavaScript — Client Side</span>
+            <h3><code>_product.initDynamicProductCards()</code></h3>
+            <p>Alpine <code>x-init</code> fires. JS reads <code>window._recent_products</code> (from localStorage) and begins hydrating product data.</p>
+            <span class="file-ref">product-data.ts → lines 230–293</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down orange"></div></div>
+
+          <div class="node js">
+            <span class="node-tag js">Data Resolution</span>
+            <h3><code>getHydratedProductData()</code></h3>
+            <p>For each recently viewed handle, fetches full product data. Checks 3 sources in order:<br>
+            <strong>1.</strong> In-page HTML &nbsp; <strong>2.</strong> IndexedDB cache &nbsp; <strong>3.</strong> Fetch API</p>
+            <span class="file-ref">product-data.ts → lines 393–398</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down orange"></div></div>
+
+          <div class="node js">
+            <span class="node-tag js">Targeting Algorithm</span>
+            <h3>Source Processing</h3>
+            <p>Applies the targeting strategy selected by the merchant:<br>
+            <code>recently_viewed</code> — chronological<br>
+            <code>recently_viewed_ai</code> — price-weighted mix<br>
+            <code>recently_viewed_most_expensive</code> — sorted desc</p>
+            <span class="file-ref">product-data.ts → lines 916–933, 1000–1002</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down orange"></div></div>
+
+          <div class="node js">
+            <span class="node-tag js">DOM Construction</span>
+            <h3>Clone Card Template Nodes</h3>
+            <p>Clones the card template from the metaobject's pre-rendered source node. Sets <code>data-product-handle</code>, <code>data-variant-id</code>, <code>data-style-id</code> on each clone.</p>
+            <span class="file-ref">product-data.ts → lines 1098–1180</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down orange"></div></div>
+
+          <div class="node js">
+            <span class="node-tag js">Alpine Hydration</span>
+            <h3><code>_sections.hydrateProductCard($el)</code></h3>
+            <p>Each cloned card initializes via Alpine. Binds reactive state, resolves bracket notation client-side via <code>getDynamicValueWithFallbacks()</code>.</p>
+            <span class="file-ref">card_product_card.ts → lines 7–50, 845</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down red"></div></div>
+
+          <div class="node dynamic final">
+            <span class="node-tag dynamic">Output</span>
+            <h3>Hydrated <code>&lt;div&gt;</code> (Client-Built)</h3>
+            <p>Visually identical card, but built in the browser. Reactive to variant changes. Requires JS. Layout shift on initial load.</p>
+          </div>
+        </div>
+
+      </div><!-- /columns -->
+    </div><!-- /flow -->
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  TRADEOFFS                                   -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="outcome">
+      <div class="outcome-card static-outcome">
+        <h4 style="color: var(--accent-green);">Static (Manual) Advantages</h4>
+        <ul>
+          <li>Full HTML at request time — zero JS dependency</li>
+          <li>Fastest first contentful paint</li>
+          <li>SEO-friendly (crawlable product markup)</li>
+          <li>No layout shift (CLS = 0 for cards)</li>
+          <li>Works with JS disabled</li>
+          <li>Bracket notation resolved server-side</li>
+        </ul>
+      </div>
+      <div class="outcome-card dynamic-outcome">
+        <h4 style="color: var(--accent-red);">Dynamic (Recently Viewed) Advantages</h4>
+        <ul>
+          <li>Personalized per-visitor (localStorage data)</li>
+          <li>No server knowledge of browsing history needed</li>
+          <li>Targeting algorithms (AI, price sort, etc.)</li>
+          <li>Reactive to variant changes via Alpine</li>
+          <li>Can mix sources with fallback chains</li>
+          <li>Products fetched & cached in IndexedDB</li>
+        </ul>
+      </div>
+      <div class="outcome-card" style="border-color: var(--accent-purple);">
+        <h4 style="color: var(--accent-purple);">Why It Matters</h4>
+        <ul style="list-style: none;">
+          <li style="padding-left: 0;">The <strong>same card metaobject</strong> powers both paths — the merchant designs the card once and the theme decides the render strategy based on the data source.</li>
+          <li style="padding-left: 0; margin-top: 8px;">Static = <em>"Shopify knows the products at request time"</em></li>
+          <li style="padding-left: 0;">Dynamic = <em>"Only the browser knows the products"</em></li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      Accelerate-Z Training — Product Card Rendering Flowchart — Platter Internal
+    </footer>
+
+  </div>
+</body>
+</html>
