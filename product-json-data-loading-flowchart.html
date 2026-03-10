@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product JSON Data Loading — Three-Tier Hydration Cascade</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #222633;
+      --border: #2e3348;
+      --text: #e2e4ed;
+      --text-muted: #8b8fa7;
+      --accent-blue: #5b8def;
+      --accent-green: #4ade80;
+      --accent-orange: #f59e0b;
+      --accent-purple: #a78bfa;
+      --accent-red: #f87171;
+      --accent-cyan: #22d3ee;
+      --accent-yellow: #fbbf24;
+      --accent-pink: #f472b6;
+      --html-bg: rgba(74, 222, 128, 0.08);
+      --html-border: rgba(74, 222, 128, 0.25);
+      --idb-bg: rgba(91, 141, 239, 0.08);
+      --idb-border: rgba(91, 141, 239, 0.25);
+      --fetch-bg: rgba(245, 158, 11, 0.08);
+      --fetch-border: rgba(245, 158, 11, 0.25);
+      --decision-bg: rgba(167, 139, 250, 0.08);
+      --decision-border: rgba(167, 139, 250, 0.25);
+      --edge-bg: rgba(248, 113, 113, 0.08);
+      --edge-border: rgba(248, 113, 113, 0.25);
+      --merge-bg: rgba(34, 211, 238, 0.08);
+      --merge-border: rgba(34, 211, 238, 0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    .container { max-width: 1440px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 48px; }
+    header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+    header p { color: var(--text-muted); font-size: 15px; }
+
+    .legend {
+      display: flex; justify-content: center; gap: 28px; margin-bottom: 40px; flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+    .legend-dot.html { background: var(--accent-green); }
+    .legend-dot.idb { background: var(--accent-blue); }
+    .legend-dot.fetch { background: var(--accent-orange); }
+    .legend-dot.decision { background: var(--accent-purple); }
+    .legend-dot.merge { background: var(--accent-cyan); }
+    .legend-dot.edge { background: var(--accent-red); }
+
+    /* ── Nodes ── */
+    .node {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px 24px; min-width: 280px; max-width: 420px; position: relative;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .node:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .node.html { background: var(--html-bg); border-color: var(--html-border); }
+    .node.idb { background: var(--idb-bg); border-color: var(--idb-border); }
+    .node.fetch-node { background: var(--fetch-bg); border-color: var(--fetch-border); }
+    .node.decision { background: var(--decision-bg); border-color: var(--accent-purple); border-width: 2px; text-align: center; }
+    .node.merge { background: var(--merge-bg); border-color: var(--merge-border); }
+    .node.edge { background: var(--edge-bg); border-color: var(--edge-border); }
+    .node.wide { min-width: 500px; text-align: center; }
+    .node.narrow { min-width: 240px; max-width: 340px; }
+
+    .node-tag {
+      display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.2px; padding: 3px 8px; border-radius: 4px; margin-bottom: 10px;
+    }
+    .node-tag.html { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); }
+    .node-tag.idb { background: rgba(91, 141, 239, 0.15); color: var(--accent-blue); }
+    .node-tag.fetch { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+    .node-tag.decision { background: rgba(167, 139, 250, 0.15); color: var(--accent-purple); }
+    .node-tag.merge { background: rgba(34, 211, 238, 0.15); color: var(--accent-cyan); }
+    .node-tag.edge { background: rgba(248, 113, 113, 0.15); color: var(--accent-red); }
+
+    .node h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .node p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .node code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;
+      color: var(--accent-cyan);
+    }
+    .node .file-ref {
+      display: block; font-size: 11px; color: var(--text-muted); margin-top: 8px; opacity: 0.7;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    /* ── Connectors ── */
+    .connector { display: flex; flex-direction: column; align-items: center; padding: 6px 0; }
+    .connector-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
+      padding: 2px 10px; border-radius: 20px; margin: 2px 0;
+    }
+    .connector-label.yes { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
+    .connector-label.no { color: var(--accent-red); background: rgba(248, 113, 113, 0.1); }
+    .connector-label.partial { color: var(--accent-orange); background: rgba(245, 158, 11, 0.1); }
+    .connector-label.full { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
+    .connector-label.stale { color: var(--accent-orange); background: rgba(245, 158, 11, 0.1); }
+    .connector-label.fresh { color: var(--accent-green); background: rgba(74, 222, 128, 0.1); }
+    .connector-label.miss { color: var(--accent-red); background: rgba(248, 113, 113, 0.1); }
+    .connector-label.fallback { color: var(--accent-purple); background: rgba(167, 139, 250, 0.1); }
+
+    .arrow-down { width: 2px; height: 28px; background: var(--border); position: relative; }
+    .arrow-down::after {
+      content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+      border-left: 5px solid transparent; border-right: 5px solid transparent;
+      border-top: 6px solid var(--border);
+    }
+    .arrow-down.cyan { background: var(--accent-cyan); }
+    .arrow-down.cyan::after { border-top-color: var(--accent-cyan); }
+    .arrow-down.green { background: var(--accent-green); }
+    .arrow-down.green::after { border-top-color: var(--accent-green); }
+    .arrow-down.orange { background: var(--accent-orange); }
+    .arrow-down.orange::after { border-top-color: var(--accent-orange); }
+    .arrow-down.purple { background: var(--accent-purple); }
+    .arrow-down.purple::after { border-top-color: var(--accent-purple); }
+    .arrow-down.blue { background: var(--accent-blue); }
+    .arrow-down.blue::after { border-top-color: var(--accent-blue); }
+    .arrow-down.red { background: var(--accent-red); }
+    .arrow-down.red::after { border-top-color: var(--accent-red); }
+
+    /* ── Layout ── */
+    .flow { display: flex; flex-direction: column; align-items: center; }
+    .columns { display: flex; gap: 48px; align-items: flex-start; justify-content: center; width: 100%; }
+    .column { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+    .column-header {
+      font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 16px; padding: 6px 16px; border-radius: 20px;
+    }
+
+    /* ── Section divider ── */
+    .divider { width: 100%; max-width: 800px; height: 1px; background: var(--border); margin: 48px auto; }
+
+    /* ── Section headers ── */
+    .section-header { text-align: center; margin-bottom: 32px; margin-top: 8px; }
+    .section-header h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .section-header p { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Splits ── */
+    .split-section { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+    /* ── Code block ── */
+    .code-block {
+      background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px;
+      padding: 16px 20px; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 13px; color: var(--accent-cyan); line-height: 1.6;
+      max-width: 600px; width: 100%; margin: 0 auto; text-align: left;
+    }
+    .code-block .comment { color: var(--text-muted); }
+    .code-block .keyword { color: var(--accent-purple); }
+    .code-block .value { color: var(--accent-green); }
+    .code-block .operator { color: var(--accent-orange); }
+
+    /* ── Edge case chips ── */
+    .edge-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px; width: 100%; max-width: 1200px; margin: 24px auto;
+    }
+    .edge-chip {
+      background: var(--edge-bg); border: 1px solid var(--edge-border); border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .edge-chip strong { color: var(--accent-red); font-size: 13px; display: block; margin-bottom: 4px; }
+    .edge-chip p { color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+    .edge-chip code {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; color: var(--accent-cyan);
+    }
+
+    /* ── Comparison table ── */
+    .compare-table { width: 100%; max-width: 900px; margin: 24px auto; border-collapse: collapse; }
+    .compare-table th, .compare-table td {
+      text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border);
+    }
+    .compare-table th {
+      color: var(--text-muted); font-weight: 600; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .compare-table td code {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; color: var(--accent-cyan);
+    }
+
+    /* ── Nav link ── */
+    .nav-link {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border); color: var(--accent-blue);
+      text-decoration: none; font-size: 13px; font-weight: 600;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .nav-link:hover { background: rgba(91, 141, 239, 0.08); border-color: var(--accent-blue); }
+
+    footer { margin-top: 56px; text-align: center; color: var(--text-muted); font-size: 12px; opacity: 0.5; }
+
+    @media (max-width: 1100px) {
+      .columns { flex-direction: column; align-items: center; gap: 40px; }
+      .node { min-width: 280px; max-width: 90vw; }
+      .node.wide { min-width: 280px; }
+      .code-block { max-width: 90vw; }
+      .edge-grid { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; color: #111; padding: 20px; }
+      .node { border-color: #ccc; background: #f9f9f9; }
+      .node p, .node .file-ref { color: #555; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div style="text-align: center; margin-bottom: 8px;">
+      <a href="modal-swr-lazy-loading-flowchart.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 8H5m0 0l3-3M5 8l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back: Modal &amp; Lazy Loading SWR Flow
+      </a>
+    </div>
+
+    <header>
+      <h1>Product JSON Data Loading</h1>
+      <p>Three-tier hydration cascade: Liquid &rarr; IndexedDB &rarr; Network Fetch &mdash; how <code>_full_data</code> controls the flow</p>
+    </header>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot html"></div> Liquid / HTML (Tier 1)</div>
+      <div class="legend-item"><div class="legend-dot idb"></div> IndexedDB (Tier 2)</div>
+      <div class="legend-item"><div class="legend-dot fetch"></div> Network Fetch (Tier 3)</div>
+      <div class="legend-item"><div class="legend-dot decision"></div> Decision Point</div>
+      <div class="legend-item"><div class="legend-dot merge"></div> Merge / Strategy</div>
+      <div class="legend-item"><div class="legend-dot edge"></div> Edge Case</div>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  SECTION 1: DATA SOURCES                     -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="section-header">
+      <h2>Section 1: Data Sources &mdash; Where Product JSON Originates</h2>
+      <p><code>_json.product.liquid</code> renders product data as inline JSON &mdash; the <code>card</code> parameter controls completeness</p>
+    </div>
+
+    <div class="flow">
+
+      <div class="node html wide">
+        <span class="node-tag html">Liquid Template &mdash; _json.product.liquid</span>
+        <h3>Server-Side Product JSON Rendering</h3>
+        <p>Every product on the page is rendered to JSON through this snippet. The <code>card</code> parameter determines what data is included.</p>
+        <span class="file-ref">snippets/_json.product.liquid</span>
+      </div>
+
+      <div class="connector"><div class="arrow-down green"></div></div>
+
+      <div class="node decision" style="min-width: 400px;">
+        <span class="node-tag decision">Liquid Parameter Check</span>
+        <h3><code>card == true</code> ?</h3>
+        <p>Controls data completeness and the <code>_full_data</code> flag</p>
+      </div>
+
+      <!-- Two-way split -->
+      <div class="split-section">
+        <div style="position: relative; width: 560px; height: 40px;">
+          <div style="position: absolute; top: 0; left: 50%; width: 2px; height: 12px; background: var(--border);"></div>
+          <div style="position: absolute; top: 12px; left: calc(50% - 280px); width: 560px; height: 2px; background: var(--border);"></div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 280px; margin-top: -4px;">
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span class="connector-label yes">Yes &mdash; card: true</span>
+            <div class="arrow-down orange"></div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span class="connector-label no">No &mdash; card omitted</span>
+            <div class="arrow-down green"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="columns">
+
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-orange); background: rgba(245, 158, 11, 0.1);">Partial Data</span>
+
+          <div class="node fetch-node">
+            <span class="node-tag fetch">Card Context</span>
+            <h3>Partial JSON &mdash; No <code>_full_data</code></h3>
+            <p>Restricted metafields based on <code>data__product__restrict_product_card_metafield_keys</code> setting. Essential display data only: title, price, images, variants (limited).</p>
+            <span class="file-ref">_json.product.liquid:42-44 &bull; config/settings_schema.ts</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down orange"></div></div>
+
+          <div class="node" style="text-align: center;">
+            <span class="node-tag decision">Result</span>
+            <h3>Triggers hydration cascade</h3>
+            <p>Because <code>_full_data</code> is absent, any consumer that needs complete data will call <code>getHydratedProductData()</code></p>
+          </div>
+        </div>
+
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-green); background: rgba(74, 222, 128, 0.1);">Full Data</span>
+
+          <div class="node html">
+            <span class="node-tag html">PDP / Full Context</span>
+            <h3>Complete JSON &mdash; <code>_full_data: true</code></h3>
+            <p>All metafields included. Full variant data, media, selling plans, and all Shopify product properties. Used on PDP and design mode.</p>
+            <span class="file-ref">_json.product.liquid:42-44</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node html" style="text-align: center;">
+            <span class="node-tag html">Result</span>
+            <h3>No hydration needed</h3>
+            <p><code>_full_data: true</code> means the product is complete &mdash; no further fetching required</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  SECTION 2: THREE-TIER LOADING CASCADE       -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="divider"></div>
+
+    <div class="section-header">
+      <h2>Section 2: Three-Tier Loading Cascade</h2>
+      <p>Sequential fallback in <code>product-data.ts</code> &mdash; each tier tried in order, first success wins</p>
+    </div>
+
+    <div class="flow">
+
+      <!-- Tier 1 -->
+      <div class="node html wide">
+        <span class="node-tag html">Tier 1 &mdash; getHtmlProduct(handle)</span>
+        <h3>Parse Product from DOM</h3>
+        <p><strong>Synchronous &mdash; fastest source.</strong> Checks <code>window._products[handle]</code>, then parses <code>[data-primary-product-data]</code> or <code>[data-product-data]</code> attributes from the DOM.</p>
+        <span class="file-ref">assets/product-data.ts:10-44</span>
+      </div>
+
+      <div class="connector"><div class="arrow-down green"></div></div>
+
+      <div class="node decision" style="min-width: 400px;">
+        <span class="node-tag decision">Check Result</span>
+        <h3>Product found in DOM?</h3>
+      </div>
+
+      <div class="split-section">
+        <div style="position: relative; width: 560px; height: 40px;">
+          <div style="position: absolute; top: 0; left: 50%; width: 2px; height: 12px; background: var(--border);"></div>
+          <div style="position: absolute; top: 12px; left: calc(50% - 280px); width: 560px; height: 2px; background: var(--border);"></div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 280px; margin-top: -4px;">
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span class="connector-label yes">Found</span>
+            <div class="arrow-down green"></div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span class="connector-label no">Not found</span>
+            <div class="arrow-down blue"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="columns">
+
+        <div class="column">
+          <div class="node html">
+            <span class="node-tag html">HTML Product Found</span>
+            <h3>Return immediately</h3>
+            <p>Product data returned synchronously. If <code>!_full_data</code>, an <strong>async side effect</strong> checks IndexedDB for a richer version and merges it.</p>
+          </div>
+
+          <div class="connector">
+            <span class="connector-label partial">!_full_data?</span>
+            <div class="arrow-down orange"></div>
+          </div>
+
+          <div class="node idb">
+            <span class="node-tag idb">Side Effect &mdash; Async IDB Check</span>
+            <h3>Background merge from IndexedDB</h3>
+            <p>If partial data was found in DOM, asynchronously checks IDB for a cached full version. Uses merge strategy to upgrade without blocking.</p>
+          </div>
+        </div>
+
+        <div class="column">
+          <!-- Tier 2 -->
+          <div class="node idb">
+            <span class="node-tag idb">Tier 2 &mdash; getCachedProduct(handle)</span>
+            <h3>Check IndexedDB via <code>idb-keyval</code></h3>
+            <p><strong>Async.</strong> Key: <code>_{themeId}-product--{handle}</code>. Returns cached data immediately. If <code>_updated_at</code> is &gt;15 min old, triggers a <strong>low-priority background refresh</strong>.</p>
+            <span class="file-ref">assets/product-data.ts:45-72</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down blue"></div></div>
+
+          <div class="node decision" style="min-width: 300px;">
+            <span class="node-tag decision">IDB Result</span>
+            <h3>Cached product found?</h3>
+          </div>
+
+          <div class="split-section">
+            <div style="position: relative; width: 360px; height: 36px;">
+              <div style="position: absolute; top: 0; left: 50%; width: 2px; height: 10px; background: var(--border);"></div>
+              <div style="position: absolute; top: 10px; left: calc(50% - 180px); width: 360px; height: 2px; background: var(--border);"></div>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 120px; margin-top: -4px;">
+              <div style="display: flex; flex-direction: column; align-items: center;">
+                <span class="connector-label yes">Hit</span>
+                <div class="arrow-down green"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center;">
+                <span class="connector-label miss">Miss</span>
+                <div class="arrow-down orange"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="columns" style="gap: 24px;">
+
+            <div class="column">
+              <div class="node idb narrow">
+                <span class="node-tag idb">Return Cached</span>
+                <h3>Use IDB data</h3>
+                <p>If stale (&gt;15 min), queues background revalidation at low priority</p>
+              </div>
+            </div>
+
+            <div class="column">
+              <!-- Tier 3 -->
+              <div class="node fetch-node narrow">
+                <span class="node-tag fetch">Tier 3 &mdash; getFetchProduct</span>
+                <h3>Network Fetch</h3>
+                <p>Hits Shopify recommendations endpoint. Returns full product + related products as card data.</p>
+                <span class="file-ref">product-data.ts:73-152</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="connector" style="margin-top: 24px;"><div class="arrow-down orange"></div></div>
+
+      <!-- Fetch detail node -->
+      <div class="node fetch-node wide">
+        <span class="node-tag fetch">Network Fetch Details &mdash; getFetchProduct(handle, id, priority)</span>
+        <h3>Shopify Recommendations API</h3>
+        <p>Endpoint: <code>/recommendations/products?product_id={id}&amp;limit=10&amp;section_id=data_product_json&amp;intent=related&amp;with_product_data=true</code></p>
+        <p style="margin-top: 8px;">Returns the <strong>main product</strong> with <code>_full_data: true</code> plus <strong>related products</strong> (card data only, no <code>_full_data</code>). Priority: <code>"high"</code> for PDP, <code>"auto"</code> for cards.</p>
+        <span class="file-ref">assets/product-data.ts:73-152 &bull; sections/__data_product_json/data_product_json.liquid</span>
+      </div>
+
+      <div class="connector"><div class="arrow-down blue"></div></div>
+
+      <div class="node idb wide">
+        <span class="node-tag idb">Persist &mdash; saveProduct(handle)</span>
+        <h3>Debounced IndexedDB Write via <code>requestIdleCallback</code></h3>
+        <p>Uses sequence tracking to handle rapid updates. Loops until all pending mutations are persisted. Prevents duplicate <code>idbKeyval.set()</code> calls. Also stores related products from the fetch response.</p>
+        <span class="file-ref">assets/product-data.ts:153-195</span>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  SECTION 3: DATA MERGING STRATEGY            -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="divider"></div>
+
+    <div class="section-header">
+      <h2>Section 3: Data Merging Strategy</h2>
+      <p>The ternary merge pattern used everywhere data is combined &mdash; full data always wins</p>
+    </div>
+
+    <div class="flow">
+
+      <div class="code-block">
+        <span class="comment">// The merge pattern — used in getHtmlProduct, getCachedProduct, saveProduct</span><br>
+        <span class="keyword">const</span> merged <span class="operator">=</span> incoming.<span class="value">_full_data</span><br>
+        &nbsp;&nbsp;<span class="operator">?</span> incoming &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Full incoming → use it</span><br>
+        &nbsp;&nbsp;<span class="operator">:</span> stored.<span class="value">_full_data</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="operator">?</span> stored &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Stored is full → keep it</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="operator">:</span> incoming<span class="operator">;</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Both partial → use latest</span>
+      </div>
+
+      <div style="margin-top: 24px;"></div>
+
+      <div class="columns" style="gap: 24px;">
+
+        <div class="column">
+          <div class="node html">
+            <span class="node-tag html">Rule 1</span>
+            <h3>Full incoming wins</h3>
+            <p>If the incoming data has <code>_full_data: true</code>, it always replaces whatever is stored &mdash; full data is the most complete source.</p>
+          </div>
+        </div>
+
+        <div class="column">
+          <div class="node idb">
+            <span class="node-tag idb">Rule 2</span>
+            <h3>Full stored is protected</h3>
+            <p>If stored data has <code>_full_data: true</code> but incoming doesn't, the stored version is kept. <strong>Partial never overwrites full.</strong></p>
+          </div>
+        </div>
+
+        <div class="column">
+          <div class="node fetch-node">
+            <span class="node-tag fetch">Rule 3</span>
+            <h3>Latest partial wins</h3>
+            <p>When both incoming and stored are partial (no <code>_full_data</code>), the incoming (latest) data is used &mdash; it may have fresher prices or availability.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  SECTION 4: ENTRY POINTS                     -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="divider"></div>
+
+    <div class="section-header">
+      <h2>Section 4: Entry Points &mdash; Two Ways to Request Product Data</h2>
+      <p>When to use each function and what "done" means for each</p>
+    </div>
+
+    <div class="flow">
+      <div class="columns" style="gap: 64px;">
+
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-blue); background: rgba(91, 141, 239, 0.1);">getProductData</span>
+
+          <div class="node idb" style="max-width: 450px;">
+            <span class="node-tag idb">Basic Loader</span>
+            <h3><code>getProductData(handle, id, priority)</code></h3>
+            <p><strong>Stops when product handle exists</strong> in any tier &mdash; may return partial data. Does not check recommendation freshness. Used when you just need the product object (any version).</p>
+            <p style="margin-top: 8px;">Cascade: <strong>HTML &rarr; IDB &rarr; Fetch</strong></p>
+            <span class="file-ref">assets/product-data.ts:212-229</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down blue"></div></div>
+
+          <div class="node" style="text-align: center;">
+            <span class="node-tag decision">When to use</span>
+            <h3>Initial PDP load, card init</h3>
+            <p>When you need <em>any</em> product data fast, even if partial. Hydration happens separately.</p>
+          </div>
+        </div>
+
+        <div class="column">
+          <span class="column-header" style="color: var(--accent-green); background: rgba(74, 222, 128, 0.1);">getHydratedProductData</span>
+
+          <div class="node html" style="max-width: 450px;">
+            <span class="node-tag html">Full Hydration Loader</span>
+            <h3><code>getHydratedProductData(handle, id, priority)</code></h3>
+            <p><strong>Stops when recommendations are fresh</strong> (&lt;30 min). Ensures full product data AND related products are available and up-to-date. Triggers fetch even if product exists but recs are stale.</p>
+            <p style="margin-top: 8px;">Cascade: <strong>HTML &rarr; IDB &rarr; Fetch</strong> + freshness check on <code>_recommendations_loaded_at</code></p>
+            <span class="file-ref">assets/product-data.ts:196-211</span>
+          </div>
+
+          <div class="connector"><div class="arrow-down green"></div></div>
+
+          <div class="node" style="text-align: center;">
+            <span class="node-tag decision">When to use</span>
+            <h3>Card hydration, modal open</h3>
+            <p>When you need complete data with related products &mdash; async, runs in background after initial render.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Comparison table -->
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th>getProductData</th>
+          <th>getHydratedProductData</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Stops when</td>
+          <td>Product exists (any version)</td>
+          <td>Recommendations fresh (&lt;30 min)</td>
+        </tr>
+        <tr>
+          <td>Returns partial?</td>
+          <td>Yes &mdash; may have no <code>_full_data</code></td>
+          <td>Only if all tiers fail</td>
+        </tr>
+        <tr>
+          <td>Checks recs freshness?</td>
+          <td>No</td>
+          <td>Yes &mdash; <code>_recommendations_loaded_at</code></td>
+        </tr>
+        <tr>
+          <td>Typical caller</td>
+          <td><code>initMainProduct</code>, card init</td>
+          <td>Async hydration, modal open</td>
+        </tr>
+        <tr>
+          <td>Fetch priority</td>
+          <td>Passed through (<code>"high"</code> or <code>"auto"</code>)</td>
+          <td>Passed through (<code>"high"</code> or <code>"auto"</code>)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  SECTION 5: CONTEXT-SPECIFIC FLOWS           -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="divider"></div>
+
+    <div class="section-header">
+      <h2>Section 5: Context-Specific Flows</h2>
+      <p>How product data loads in the three main contexts &mdash; Card, PDP Direct, and PDP via SPA Navigation</p>
+    </div>
+
+    <div class="columns" style="gap: 32px; align-items: stretch;">
+
+      <!-- ── Column A: Product Card ── -->
+      <div class="column" style="flex: 1; max-width: 420px;">
+        <span class="column-header" style="color: var(--accent-green); background: rgba(74, 222, 128, 0.1);">A: Product Card</span>
+
+        <div class="node html">
+          <span class="node-tag html">1. Server Render</span>
+          <h3>Card rendered with <code>card: true</code></h3>
+          <p>Liquid renders partial JSON inline in the DOM. No <code>_full_data</code> flag. Restricted metafields.</p>
+        </div>
+
+        <div class="connector"><div class="arrow-down green"></div></div>
+
+        <div class="node idb">
+          <span class="node-tag idb">2. JS Init</span>
+          <h3><code>card_product_card.ts</code> reads HTML product</h3>
+          <p><code>_products[handle] ?? getHtmlProduct(handle)</code> &mdash; grabs partial data from DOM synchronously.</p>
+          <span class="file-ref">card_product_card.ts:42-58</span>
+        </div>
+
+        <div class="connector">
+          <span class="connector-label partial">!_full_data</span>
+          <div class="arrow-down orange"></div>
+        </div>
+
+        <div class="node fetch-node">
+          <span class="node-tag fetch">3. Async Hydration</span>
+          <h3>Calls <code>getHydratedProductData()</code></h3>
+          <p>Runs in background. Fetches full data + recommendations. Card continues to display with partial data until resolved.</p>
+        </div>
+
+        <div class="connector"><div class="arrow-down green"></div></div>
+
+        <div class="node html" style="text-align: center;">
+          <span class="node-tag html">4. State Update</span>
+          <h3>Full data arrives &rarr; reactive update</h3>
+          <p>Alpine state updates. Card re-renders with complete metafields, variant data, etc.</p>
+        </div>
+      </div>
+
+      <!-- ── Column B: PDP Direct ── -->
+      <div class="column" style="flex: 1; max-width: 420px;">
+        <span class="column-header" style="color: var(--accent-blue); background: rgba(91, 141, 239, 0.1);">B: PDP (Direct Load)</span>
+
+        <div class="node idb">
+          <span class="node-tag idb">1. Preload Link</span>
+          <h3><code>data_product_json</code> section renders preload</h3>
+          <p>No inline JSON on production PDP. Instead, a <code>&lt;link rel="preload"&gt;</code> for the recommendations endpoint fires early.</p>
+          <span class="file-ref">data_product_json.liquid</span>
+        </div>
+
+        <div class="connector"><div class="arrow-down blue"></div></div>
+
+        <div class="node decision">
+          <span class="node-tag decision">2. initMainProduct</span>
+          <h3>Check <code>_products[handle]</code></h3>
+          <p>Empty &mdash; no inline JSON in production PDP HTML</p>
+        </div>
+
+        <div class="connector">
+          <span class="connector-label miss">Not found</span>
+          <div class="arrow-down orange"></div>
+        </div>
+
+        <div class="node fetch-node">
+          <span class="node-tag fetch">3. getProductData(handle, id, "high")</span>
+          <h3>Full cascade at high priority</h3>
+          <p>Falls through HTML (nothing) &rarr; IDB (maybe cached from previous visit) &rarr; Fetch (hits preloaded endpoint).</p>
+          <span class="file-ref">main_product.ts:33-48</span>
+        </div>
+
+        <div class="connector"><div class="arrow-down green"></div></div>
+
+        <div class="node html">
+          <span class="node-tag html">4. Full Data Arrives</span>
+          <h3><code>_full_data: true</code> set</h3>
+          <p>Product fully hydrated. Recommendations loaded. Stored to IDB + session flag set.</p>
+        </div>
+
+        <div class="connector"><div class="arrow-down green"></div></div>
+
+        <div class="node html" style="text-align: center;">
+          <span class="node-tag html">5. PDP Ready</span>
+          <h3><code>state.product = res</code> &rarr; UI renders</h3>
+          <p>Full product form, variant picker, gallery &mdash; all hydrated.</p>
+        </div>
+      </div>
+
+      <!-- ── Column C: PDP SPA Navigation ── -->
+      <div class="column" style="flex: 1; max-width: 420px;">
+        <span class="column-header" style="color: var(--accent-orange); background: rgba(245, 158, 11, 0.1);">C: PDP (SPA from Card)</span>
+
+        <div class="node fetch-node">
+          <span class="node-tag fetch">1. Card Click &rarr; Barba Navigate</span>
+          <h3>SPA page transition fires</h3>
+          <p>Barba prefetch fetches PDP HTML. <code>handleRouteCaching</code> runs in <code>requestIdleCallback</code> to extract product data from the prefetched HTML.</p>
+          <span class="file-ref">page-transitions.ts:92-131</span>
+        </div>
+
+        <div class="connector"><div class="arrow-down orange"></div></div>
+
+        <div class="node decision">
+          <span class="node-tag decision">2. initMainProduct fires</span>
+          <h3>Check <code>_products[handle]</code></h3>
+          <p>Finds <strong>partial card data</strong> from previous page &mdash; product exists but is incomplete.</p>
+        </div>
+
+        <div class="connector">
+          <span class="connector-label partial">!product._full_data</span>
+          <div class="arrow-down purple"></div>
+        </div>
+
+        <div class="node decision">
+          <span class="node-tag decision">3. Guard Check</span>
+          <h3><code>!product._full_data</code> &rarr; hydrate</h3>
+          <p>Triggers <code>getHydratedProductData()</code> because partial card data isn't enough for PDP.</p>
+          <span class="file-ref">main_product.ts:43-48</span>
+        </div>
+
+        <div class="connector"><div class="arrow-down blue"></div></div>
+
+        <div class="node idb">
+          <span class="node-tag idb">4. Cascade Runs</span>
+          <h3>HTML (nothing new) &rarr; IDB (maybe stale) &rarr; Fetch</h3>
+          <p>HTML tier returns same partial data. IDB may have cached full data from a previous direct visit. Otherwise, falls through to network fetch.</p>
+        </div>
+
+        <div class="connector"><div class="arrow-down green"></div></div>
+
+        <div class="node html" style="text-align: center;">
+          <span class="node-tag html">5. Promise resolves</span>
+          <h3><code>state.product = res</code> &rarr; UI updates</h3>
+          <p>Full data replaces partial. PDP re-renders reactively with complete product information.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!--  SECTION 6: EDGE CASES & NOTES               -->
+    <!-- ════════════════════════════════════════════ -->
+
+    <div class="divider"></div>
+
+    <div class="section-header">
+      <h2>Section 6: Edge Cases &amp; Notes</h2>
+      <p>Important gotchas and implementation details developers should be aware of</p>
+    </div>
+
+    <div class="edge-grid">
+
+      <div class="edge-chip">
+        <strong>No .catch() on Hydration Promise</strong>
+        <p>The hydration promise in <code>card_product_card.ts</code> and <code>main_product.ts</code> has no error handler. If the network fetch fails, the product <strong>silently remains partial</strong>. The UI won't crash but will be incomplete.</p>
+      </div>
+
+      <div class="edge-chip">
+        <strong>PDP Inline JSON Only in Design Mode</strong>
+        <p>Production PDP HTML has <strong>no</strong> <code>[data-product-data]</code> element. Inline JSON is only rendered when <code>request.design_mode</code> is true (Shopify theme editor). Production always relies on the fetch cascade.</p>
+      </div>
+
+      <div class="edge-chip">
+        <strong>Session Storage Optimization</strong>
+        <p><code>sessionStorage.setItem(dbKey, "1")</code> flags products that have full data cached in IDB. The <code>data_product_json.liquid</code> section checks this flag &mdash; if set, <strong>skips the preload link</strong> entirely, avoiding a redundant network request.</p>
+      </div>
+
+      <div class="edge-chip">
+        <strong>Recommendations Are Card Data</strong>
+        <p>Related products returned from the <code>/recommendations</code> endpoint are loaded with <code>card: true</code> &mdash; they do <strong>not</strong> have <code>_full_data</code>. Each recommendation stores as partial data that will trigger its own hydration cascade when needed.</p>
+      </div>
+
+      <div class="edge-chip">
+        <strong>IDB Key Format Variants</strong>
+        <p>Two key formats exist: <code>_{themeId}-product--{handle}</code> (product-data.ts) and <code>_{themeId}-product--{handle}--{cacheVersion}</code> (page-transitions.ts). The cache version suffix ensures stale data is invalidated on theme updates.</p>
+      </div>
+
+      <div class="edge-chip">
+        <strong>Fetch Priority Affects LCP</strong>
+        <p>PDP uses <code>priority: "high"</code> so the product fetch competes with critical resources. Cards use <code>"auto"</code> (browser default), which defers to after layout-critical resources are loaded.</p>
+      </div>
+
+      <div class="edge-chip">
+        <strong>requestIdleCallback for IDB Writes</strong>
+        <p>All IndexedDB writes go through <code>requestIdleCallback</code> with sequence tracking. This prevents IDB operations from blocking the main thread during interactive moments (scrolling, animations).</p>
+      </div>
+
+      <div class="edge-chip">
+        <strong>Barba Prefetch &amp; handleRouteCaching</strong>
+        <p>When Barba prefetches a page, <code>handleRouteCaching</code> extracts <code>[data-product-data]</code> from the <em>prefetched</em> HTML and stores it to IDB. This means the cascade may find data in IDB even on first SPA visit to a product.</p>
+      </div>
+
+    </div>
+
+    <!-- ── Footer nav ── -->
+    <div class="divider"></div>
+
+    <div style="text-align: center;">
+      <a href="modal-swr-lazy-loading-flowchart.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 8H5m0 0l3-3M5 8l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back: Modal &amp; Lazy Loading SWR Flow
+      </a>
+    </div>
+
+    <footer>
+      Accelerate-Z Training &mdash; Product JSON Data Loading &mdash; Three-Tier Hydration Cascade &mdash; Platter Internal
+    </footer>
+
+  </div>
+</body>
+</html>
