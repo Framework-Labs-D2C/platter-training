@@ -1462,9 +1462,22 @@ document.addEventListener(<span class="string">"DOMContentLoaded"</span>, init);
       <h3>Pattern 3: Style Extraction &amp; Consolidation</h3>
       <p>The <code>_layout.merge_styles</code> snippet demonstrates another variable hack: extracting all <code>&lt;style&gt;</code> tags from individually rendered sections and consolidating them into a single block. This prevents duplicate CSS and reduces render-blocking resources.</p>
 
-      <div class="code-block"><span class="comment">&lt;!-- Simplified pattern from theme.liquid modal rendering --&gt;</span>
+      <div class="highlight-box warn">
+        <strong>Noscript protection:</strong> Styles inside <code>&lt;noscript&gt;</code> blocks must stay where they are &mdash; they should only apply when JavaScript is disabled. The snippet protects these by temporarily replacing <code>&lt;style</code> / <code>&lt;/style&gt;</code> inside noscript blocks with placeholders before extraction, then restoring them afterward. Without this, noscript styles leak into the global merged <code>&lt;style&gt;</code> tag and apply unconditionally.
+      </div>
 
-<span class="liquid">{% assign content = content | replace: '&lt;style&gt;&lt;/style&gt;', '' | append: " " %}</span>
+      <div class="code-block"><span class="comment">&lt;!-- Simplified pattern from _layout.merge_styles --&gt;</span>
+
+<span class="comment">&lt;!-- Step 1: Protect styles inside &lt;noscript&gt; blocks --&gt;</span>
+<span class="liquid">{% if content contains '&lt;noscript' %}</span>
+  <span class="liquid">{% assign noscript_parts = content | split: '&lt;noscript' %}</span>
+  <span class="comment">&lt;!-- For each noscript block, replace &lt;style / &lt;/style&gt; with placeholders --&gt;</span>
+  <span class="liquid">{% assign protected_inner = noscript_inner | replace: '&lt;style', '&lt;NOSCRIPT_STYLE' %}</span>
+  <span class="liquid">{% assign protected_inner = protected_inner | replace: '&lt;/style&gt;', '&lt;/NOSCRIPT_STYLE&gt;' %}</span>
+  <span class="comment">&lt;!-- Reconstruct content with protected noscript blocks --&gt;</span>
+<span class="liquid">{% endif %}</span>
+
+<span class="comment">&lt;!-- Step 2: Extract all (non-noscript) styles into one block --&gt;</span>
 <span class="liquid">{% assign content_array = content | split: "&lt;/style&gt;" %}</span>
 <span class="liquid">{% assign styles_content = '' %}</span>
 <span class="liquid">{% assign content = '' %}</span>
@@ -1479,7 +1492,11 @@ document.addEventListener(<span class="string">"DOMContentLoaded"</span>, init);
   <span class="liquid">{% assign styles_content = styles_content | append: splits.last %}</span>
 <span class="liquid">{% endfor %}</span>
 
-<span class="comment">&lt;!-- Output: one &lt;style&gt; block + style-free HTML --&gt;</span>
+<span class="comment">&lt;!-- Step 3: Restore noscript styles from placeholders --&gt;</span>
+<span class="liquid">{% assign content = content | replace: '&lt;NOSCRIPT_STYLE', '&lt;style' %}</span>
+<span class="liquid">{% assign content = content | replace: '&lt;/NOSCRIPT_STYLE&gt;', '&lt;/style&gt;' %}</span>
+
+<span class="comment">&lt;!-- Output: one merged &lt;style&gt; block + HTML with noscript styles intact --&gt;</span>
 <span class="tag">&lt;style&gt;</span><span class="liquid">{{ styles_content | strip_newlines }}</span><span class="tag">&lt;/style&gt;</span>
 <span class="liquid">{{ content }}</span></div>
     </div>
