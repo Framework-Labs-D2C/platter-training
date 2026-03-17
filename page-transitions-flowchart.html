@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Transitions, Render Tabs &amp; Liquid Variable Hacking</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #222633;
+      --border: #2e3348;
+      --text: #e2e4ed;
+      --text-muted: #8b8fa7;
+      --accent-blue: #5b8def;
+      --accent-green: #4ade80;
+      --accent-orange: #f59e0b;
+      --accent-purple: #a78bfa;
+      --accent-red: #f87171;
+      --accent-cyan: #22d3ee;
+      --accent-yellow: #fbbf24;
+      --accent-pink: #f472b6;
+      --step-bg: rgba(91, 141, 239, 0.08);
+      --step-border: rgba(91, 141, 239, 0.25);
+      --code-bg: rgba(167, 139, 250, 0.08);
+      --code-border: rgba(167, 139, 250, 0.25);
+      --css-bg: rgba(34, 211, 238, 0.08);
+      --css-border: rgba(34, 211, 238, 0.25);
+      --dynamic-bg: rgba(244, 114, 182, 0.08);
+      --dynamic-border: rgba(244, 114, 182, 0.25);
+      --liquid-bg: rgba(74, 222, 128, 0.08);
+      --liquid-border: rgba(74, 222, 128, 0.25);
+      --js-bg: rgba(245, 158, 11, 0.08);
+      --js-border: rgba(245, 158, 11, 0.25);
+      --warn-bg: rgba(248, 113, 113, 0.08);
+      --warn-border: rgba(248, 113, 113, 0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 14px;
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* -- Legend -- */
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.step { background: var(--accent-blue); }
+    .legend-dot.liquid { background: var(--accent-green); }
+    .legend-dot.js { background: var(--accent-orange); }
+    .legend-dot.schema { background: var(--accent-purple); }
+    .legend-dot.warn { background: var(--accent-red); }
+    .legend-dot.css { background: var(--accent-cyan); }
+
+    /* -- Nodes -- */
+
+    .node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      position: relative;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .node:hover {
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .node h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .node p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .node code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .node-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .node-tag.step { background: var(--step-bg); color: var(--accent-blue); border: 1px solid var(--step-border); }
+    .node-tag.schema { background: var(--code-bg); color: var(--accent-purple); border: 1px solid var(--code-border); }
+    .node-tag.liquid { background: var(--liquid-bg); color: var(--accent-green); border: 1px solid var(--liquid-border); }
+    .node-tag.css { background: var(--css-bg); color: var(--accent-cyan); border: 1px solid var(--css-border); }
+    .node-tag.dynamic { background: var(--dynamic-bg); color: var(--accent-pink); border: 1px solid var(--dynamic-border); }
+    .node-tag.js { background: var(--js-bg); color: var(--accent-orange); border: 1px solid var(--js-border); }
+    .node-tag.warn { background: var(--warn-bg); color: var(--accent-red); border: 1px solid var(--warn-border); }
+
+    .node.step { border-color: var(--step-border); }
+    .node.schema { border-color: var(--code-border); }
+    .node.liquid { border-color: var(--liquid-border); }
+    .node.css { border-color: var(--css-border); }
+    .node.dynamic { border-color: var(--dynamic-border); }
+    .node.js { border-color: var(--js-border); }
+    .node.warn { border-color: var(--warn-border); }
+
+    .file-ref {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 10px;
+      opacity: 0.6;
+    }
+
+    /* -- Code blocks -- */
+
+    .code-block {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin-top: 12px;
+      color: var(--text);
+      white-space: pre;
+      tab-size: 2;
+    }
+
+    .code-block .comment { color: #6b7280; }
+    .code-block .keyword { color: var(--accent-purple); }
+    .code-block .string { color: var(--accent-green); }
+    .code-block .tag { color: var(--accent-red); }
+    .code-block .attr { color: var(--accent-orange); }
+    .code-block .value { color: var(--accent-cyan); }
+    .code-block .liquid { color: var(--accent-yellow); }
+    .code-block .prop { color: var(--accent-pink); }
+
+    /* -- Connector -- */
+
+    .connector {
+      display: flex;
+      justify-content: center;
+      padding: 6px 0;
+    }
+
+    .arrow-down {
+      width: 2px;
+      height: 28px;
+      position: relative;
+    }
+
+    .arrow-down::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+    }
+
+    .arrow-down.blue { background: var(--accent-blue); }
+    .arrow-down.blue::after { border-top: 6px solid var(--accent-blue); }
+    .arrow-down.purple { background: var(--accent-purple); }
+    .arrow-down.purple::after { border-top: 6px solid var(--accent-purple); }
+    .arrow-down.green { background: var(--accent-green); }
+    .arrow-down.green::after { border-top: 6px solid var(--accent-green); }
+    .arrow-down.cyan { background: var(--accent-cyan); }
+    .arrow-down.cyan::after { border-top: 6px solid var(--accent-cyan); }
+    .arrow-down.pink { background: var(--accent-pink); }
+    .arrow-down.pink::after { border-top: 6px solid var(--accent-pink); }
+    .arrow-down.orange { background: var(--accent-orange); }
+    .arrow-down.orange::after { border-top: 6px solid var(--accent-orange); }
+    .arrow-down.red { background: var(--accent-red); }
+    .arrow-down.red::after { border-top: 6px solid var(--accent-red); }
+
+    /* -- Step counter -- */
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 700;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    .step-number.blue { background: var(--step-bg); color: var(--accent-blue); border: 2px solid var(--step-border); }
+    .step-number.purple { background: var(--code-bg); color: var(--accent-purple); border: 2px solid var(--code-border); }
+    .step-number.green { background: var(--liquid-bg); color: var(--accent-green); border: 2px solid var(--liquid-border); }
+    .step-number.cyan { background: var(--css-bg); color: var(--accent-cyan); border: 2px solid var(--css-border); }
+    .step-number.pink { background: var(--dynamic-bg); color: var(--accent-pink); border: 2px solid var(--dynamic-border); }
+    .step-number.orange { background: var(--js-bg); color: var(--accent-orange); border: 2px solid var(--js-border); }
+    .step-number.red { background: var(--warn-bg); color: var(--accent-red); border: 2px solid var(--warn-border); }
+
+    .step-title {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    /* -- Divider -- */
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 56px 0;
+    }
+
+    /* -- Section headers -- */
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .section-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 6px;
+    }
+
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* -- Side-by-side columns -- */
+
+    .side-by-side {
+      display: flex;
+      gap: 20px;
+      margin-top: 12px;
+    }
+
+    .side-by-side > div {
+      flex: 1;
+    }
+
+    .side-by-side .code-block {
+      margin-top: 0;
+    }
+
+    .side-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    /* -- Highlight box -- */
+
+    .highlight-box {
+      background: rgba(91, 141, 239, 0.06);
+      border: 1px solid var(--step-border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    .highlight-box strong {
+      color: var(--text);
+    }
+
+    .highlight-box.warn {
+      background: rgba(248, 113, 113, 0.06);
+      border-color: rgba(248, 113, 113, 0.25);
+    }
+
+    .highlight-box.tip {
+      background: rgba(74, 222, 128, 0.06);
+      border-color: rgba(74, 222, 128, 0.25);
+    }
+
+    /* -- Prop table -- */
+
+    .prop-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+
+    .prop-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .prop-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .prop-table td:first-child { color: var(--accent-cyan); }
+    .prop-table td:nth-child(2) { color: var(--accent-purple); }
+
+    .prop-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* -- Lifecycle grid -- */
+
+    .lifecycle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .lifecycle-grid .node {
+      margin: 0;
+    }
+
+    /* -- Nav Link -- */
+
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s, border-color 0.15s;
+      margin: 6px;
+    }
+
+    .nav-link:hover {
+      background: var(--step-bg);
+      border-color: var(--accent-blue);
+    }
+
+    /* -- TOC -- */
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 48px;
+    }
+
+    .toc h3 {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .toc ol {
+      list-style: none;
+      counter-reset: toc-counter;
+    }
+
+    .toc li {
+      counter-increment: toc-counter;
+      margin-bottom: 8px;
+    }
+
+    .toc li a {
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: color 0.15s;
+    }
+
+    .toc li a:hover {
+      color: var(--text);
+    }
+
+    .toc li a::before {
+      content: counter(toc-counter);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--step-bg);
+      color: var(--accent-blue);
+      border: 1px solid var(--step-border);
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* -- Footer -- */
+
+    footer {
+      margin-top: 56px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      opacity: 0.5;
+    }
+
+    /* -- Responsive -- */
+
+    @media (max-width: 900px) {
+      .side-by-side { flex-direction: column; }
+      .lifecycle-grid { grid-template-columns: 1fr; }
+      .node { padding: 16px; }
+      .code-block { font-size: 11px; }
+    }
+
+    @media print {
+      body { background: #fff; color: #111; padding: 20px; }
+      .node { border-color: #ccc; background: #f9f9f9; }
+      .node p, .node .file-ref { color: #555; }
+      .code-block { background: #f5f5f5; color: #111; border-color: #ddd; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Page Transitions, Render Tabs &amp; Liquid Variable Hacking</h1>
+      <p>How Accelerate-Z creates SPA-like navigation using Barba.js, how the Render Tabs system composes tabbed UIs in pure Liquid, and how variable hacking lets theme blocks communicate across section boundaries.</p>
+    </header>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot step"></div> Architecture / Flow</div>
+      <div class="legend-item"><div class="legend-dot schema"></div> Configuration</div>
+      <div class="legend-item"><div class="legend-dot liquid"></div> Liquid</div>
+      <div class="legend-item"><div class="legend-dot js"></div> JavaScript</div>
+      <div class="legend-item"><div class="legend-dot warn"></div> Limitation / Gotcha</div>
+      <div class="legend-item"><div class="legend-dot css"></div> Reasoning</div>
+    </div>
+
+    <!-- TOC -->
+    <div class="toc">
+      <h3>Contents</h3>
+      <ol>
+        <li><a href="#why">Why SPA-like Navigation?</a></li>
+        <li><a href="#layout">Layout Structure &mdash; The Barba Wrapper</a></li>
+        <li><a href="#config">Theme Settings Configuration</a></li>
+        <li><a href="#init">Initialization Flow</a></li>
+        <li><a href="#lifecycle">Navigation Lifecycle (The 6 Hooks)</a></li>
+        <li><a href="#scripts">Script Re-execution &mdash; The Hard Part</a></li>
+        <li><a href="#prefetch">Prefetch &amp; Caching Layer</a></li>
+        <li><a href="#shopify-cache">Custom Shopify Cache Layer (Not Stock Barba)</a></li>
+        <li><a href="#limitations">Common Limitations &amp; Gotchas</a></li>
+        <li><a href="#render-tabs">Render Tabs System</a></li>
+        <li><a href="#variable-hacking">Liquid Variable Hacking for Theme Blocks</a></li>
+      </ol>
+      <p style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">Sections 1-8 cover page transitions. Sections 10-11 cover Render Tabs and Liquid patterns.</p>
+    </div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 1: WHY SPA-LIKE NAVIGATION?                        -->
+    <!-- ============================================================ -->
+
+    <div id="why" class="section-header">
+      <h2>1. Why SPA-like Navigation?</h2>
+      <p>The reasoning behind intercepting browser navigation instead of letting Shopify handle full page loads.</p>
+    </div>
+
+    <div class="node css">
+      <span class="node-tag css">Reasoning</span>
+      <h3>The Problem with Full Page Loads in Shopify</h3>
+      <p>Every Shopify page load means: DNS lookup, TLS handshake, HTML download, CSS/JS parse, Alpine.js init, store hydration, product data fetch, layout paint. That's 1-3 seconds of white screen even on fast connections. The merchant's brand experience resets on every click.</p>
+
+      <div class="highlight-box">
+        <strong>What Barba.js gives us:</strong> Intercepts <code>&lt;a&gt;</code> clicks, fetches the next page in the background, swaps only the <code>&lt;main&gt;</code> container, and keeps everything else alive &mdash; Alpine stores, header state, cart data, modal state, CSS, and all loaded JS. Navigation feels like 50-150ms instead of 1-3s.
+      </div>
+
+      <div class="highlight-box warn">
+        <strong>This is NOT stock Barba.js.</strong> We run a custom implementation adjusted for Shopify. Key differences: custom URL normalization that strips Shopify tracking params from cache keys, collection URL deduplication (<code>/collections/x/products/y</code> &rarr; <code>/products/y</code>), a <code>fetchFromCache</code> utility that layers Barba's memory cache with IndexedDB persistence, and account route purging. The barba-prefetch plugin is also customized. Don't reference the stock Barba.js docs and expect 1:1 behavior.
+      </div>
+
+      <div class="highlight-box tip">
+        <strong>Key insight:</strong> This is NOT a traditional SPA. Shopify still renders full HTML server-side for every route. Barba just replaces the content area client-side instead of letting the browser do a full reload. Server-side rendering is preserved for SEO and first load.
+      </div>
+    </div>
+
+
+    <div class="divider"></div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 2: LAYOUT STRUCTURE                                 -->
+    <!-- ============================================================ -->
+
+    <div id="layout" class="section-header">
+      <h2>2. Layout Structure &mdash; The Barba Wrapper</h2>
+      <p>How <code>theme.liquid</code> sets up the DOM for Barba.js to manage navigation.</p>
+    </div>
+
+    <div class="node step">
+      <div class="step-title">
+        <span class="step-number blue">1</span>
+        <span class="node-tag step">Layout Structure</span>
+      </div>
+      <h3>The Three-Layer DOM Setup</h3>
+      <p>Barba needs a static <strong>wrapper</strong> (never changes) and a swappable <strong>container</strong> (replaced on each navigation). Everything outside the container persists across page transitions.</p>
+
+      <div class="code-block"><span class="tag">&lt;body</span> <span class="attr">data-barba</span>=<span class="string">"wrapper"</span><span class="tag">&gt;</span>
+
+  <span class="comment">&lt;!-- PERSISTS: global sections, Alpine stores, header, footer --&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">data-globals-section</span><span class="tag">&gt;</span>{% sections '0_global' %}<span class="tag">&lt;/div&gt;</span>
+
+  <span class="comment">&lt;!-- PERSISTS: transition overlay with animated logo --&gt;</span>
+  {% section 'global_page_transitions' %}
+
+  <span class="comment">&lt;!-- PERSISTS: header --&gt;</span>
+  <span class="tag">&lt;header</span> <span class="attr">data-header-section</span><span class="tag">&gt;</span>{% sections '0_header' %}<span class="tag">&lt;/header&gt;</span>
+
+  <span class="comment">&lt;!-- SWAPPED: this is what Barba replaces on navigation --&gt;</span>
+  <span class="tag">&lt;main</span> <span class="attr">data-content-root</span>
+        <span class="attr">data-barba</span>=<span class="string">"container"</span>
+        <span class="attr">data-barba-namespace</span>=<span class="string">"tmp"</span>
+        <span class="attr">data-template</span>=<span class="string">"{{ template }}"</span>
+        <span class="attr">data-pathname</span>=<span class="string">"{{ request.path }}"</span><span class="tag">&gt;</span>
+    {{ content_for_layout }}
+    {% section "data_product_json" %}
+  <span class="tag">&lt;/main&gt;</span>
+
+  <span class="comment">&lt;!-- PERSISTS: footer --&gt;</span>
+  <span class="tag">&lt;footer</span> <span class="attr">data-footer-section</span><span class="tag">&gt;</span>{% sections '0_footer' %}<span class="tag">&lt;/footer&gt;</span>
+
+<span class="tag">&lt;/body&gt;</span></div>
+
+      <div class="highlight-box">
+        <strong>Why <code>data-barba-namespace="tmp"</code>?</strong> We use a single namespace for all pages. Barba supports per-template namespaces for different transition animations, but we keep it simple &mdash; one universal slide transition. The <code>data-template</code> attribute is what the Alpine router store uses for template-aware logic.
+      </div>
+
+      <span class="file-ref">layout/theme.liquid:360, 522-529</span>
+    </div>
+
+
+    <div class="divider"></div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 3: THEME SETTINGS CONFIGURATION                     -->
+    <!-- ============================================================ -->
+
+    <div id="config" class="section-header">
+      <h2>3. Theme Settings Configuration</h2>
+      <p>What merchants can control and how it affects the transition behavior.</p>
+    </div>
+
+    <div class="node schema">
+      <div class="step-title">
+        <span class="step-number purple">2</span>
+        <span class="node-tag schema">Configuration</span>
+      </div>
+      <h3>The <code>global_page_transitions</code> Section</h3>
+      <p>This global section controls both the page transition overlay and the initial loading screen. It sets two window globals that the JS reads.</p>
+
+      <div class="code-block"><span class="comment">&lt;!-- Liquid output (always runs, sets defaults first) --&gt;</span>
+<span class="tag">&lt;script&gt;</span>
+  <span class="keyword">window</span>.<span class="prop">page_transitions_enabled</span> = <span class="value">false</span>;                <span class="comment">// default off</span>
+  <span class="keyword">window</span>.<span class="prop">page_transitions_ignore</span> = <span class="liquid">{{ ignore_routes | split: ',' | json }}</span>;
+<span class="tag">&lt;/script&gt;</span>
+
+<span class="liquid">{% if enable %}</span>
+  <span class="tag">&lt;script&gt;</span>
+    <span class="keyword">window</span>.<span class="prop">page_transitions_enabled</span> = <span class="value">true</span>;          <span class="comment">// overrides to on</span>
+  <span class="tag">&lt;/script&gt;</span>
+<span class="liquid">{% endif %}</span></div>
+
+      <table class="prop-table">
+        <thead>
+          <tr><th>Setting</th><th>Type</th><th>What it does</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>enable</td><td>checkbox</td><td>Master toggle. When off, <code>barba.go()</code> falls back to <code>window.location.href</code></td></tr>
+          <tr><td>ignore_routes</td><td>textarea</td><td>Comma-separated paths to skip. Supports <code>/:any</code> wildcards. E.g. <code>/apps, /products/:any</code></td></tr>
+          <tr><td>logo_desktop / logo_mobile</td><td>image_picker</td><td>Brand logo shown in the slide overlay during transitions</td></tr>
+          <tr><td>logo_height_desktop / mobile</td><td>range</td><td>Logo height in px (rendered at 1.8x for retina)</td></tr>
+          <tr><td>background_color_*</td><td>color (alpha)</td><td>Overlay background &mdash; separate desktop/mobile values</td></tr>
+          <tr><td>enable_loading_screen</td><td>checkbox</td><td>First-visit video splash screen (cookie-gated, separate from transitions)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="highlight-box warn">
+        <strong>Design mode:</strong> Transitions are <em>always</em> disabled in the Theme Editor (<code>window.design_mode</code> check). This prevents Barba from breaking the editor's own navigation and preview system. The <code>barba.go()</code> function is replaced with a simple <code>window.location.href</code> assignment.
+      </div>
+
+      <span class="file-ref">sections/__global_page_transitions/global_page_transitions.liquid</span>
+      <span class="file-ref">sections/__global_page_transitions/_schema.ts</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down purple"></div></div>
+
+    <div class="node schema">
+      <span class="node-tag schema">Configuration</span>
+      <h3>Built-in Route Exclusions</h3>
+      <p>Some routes are always excluded from both prefetching and caching, regardless of theme settings. These are hardcoded in the Barba init config.</p>
+
+      <div class="code-block"><span class="attr">prefetchIgnore</span>: [
+  <span class="string">"/challenge"</span>,              <span class="comment">// Shopify bot protection</span>
+  <span class="string">"/gift_cards"</span>,             <span class="comment">// gift card redemption</span>
+  <span class="string">"/search"</span>,                 <span class="comment">// search is dynamic, cache = stale results</span>
+  <span class="string">"/account/logout"</span>,         <span class="comment">// must be a real navigation to clear session</span>
+  <span class="string">"/customer_identity/:any"</span>, <span class="comment">// OAuth flows</span>
+  <span class="string">"/apps/:any"</span>,              <span class="comment">// third-party app proxies</span>
+  ...<span class="keyword">window</span>.<span class="prop">page_transitions_ignore</span>,  <span class="comment">// merchant-configured routes</span>
+]</div>
+
+      <span class="file-ref">assets/page-transitions.ts:170-193</span>
+    </div>
+
+
+    <div class="divider"></div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 4: INITIALIZATION FLOW                              -->
+    <!-- ============================================================ -->
+
+    <div id="init" class="section-header">
+      <h2>4. Initialization Flow</h2>
+      <p>What happens when the page first loads &mdash; from Alpine init to Barba being ready.</p>
+    </div>
+
+    <div class="node js">
+      <div class="step-title">
+        <span class="step-number orange">3</span>
+        <span class="node-tag js">JavaScript</span>
+      </div>
+      <h3>Bootstrap Sequence</h3>
+      <p>Page transitions init is triggered by the <code>alpine:init</code> event. This ensures Alpine stores are available before Barba starts intercepting navigation.</p>
+
+      <div class="code-block"><span class="comment">// Triggered by: document.addEventListener("alpine:init", initPageTransitions)</span>
+
+<span class="keyword">const</span> <span class="prop">initPageTransitions</span> = () => {
+  <span class="keyword">if</span> (initialized) <span class="keyword">return</span>;          <span class="comment">// guard against double-init</span>
+
+  <span class="comment">// 1. Create the $router Alpine store</span>
+  Alpine.store(<span class="string">"router"</span>, {
+    <span class="attr">pathname</span>: rootContainer.getAttribute(<span class="string">"data-pathname"</span>),
+    <span class="attr">template</span>: rootContainer.getAttribute(<span class="string">"data-template"</span>),
+    <span class="attr">search</span>: window.location.search,
+    <span class="attr">hash</span>: window.location.hash,
+  });
+
+  <span class="comment">// 2. If disabled or design mode, replace barba.go with native nav</span>
+  <span class="keyword">if</span> (design_mode || !page_transitions_enabled) {
+    barba.go = (href) => { window.location.href = href; };
+  }
+
+  <span class="comment">// 3. Enable barba-prefetch plugin (hover/viewport prefetching)</span>
+  barba.use(barbaPrefetch, { root: document.body, timeout: 4000 });
+
+  <span class="comment">// 4. Restore cached barba pages from IndexedDB (10min TTL)</span>
+  idbKeyval.keys().then(res => {
+    res.forEach(key => {
+      <span class="comment">// Restore barba-prefetch---{timestamp}-//-{url} entries</span>
+      <span class="keyword">if</span> (+timestamp > Date.now() - 600000) {
+        barba.cache.set(cacheKey, ...);  <span class="comment">// restore to memory cache</span>
+      } <span class="keyword">else</span> {
+        idbKeyval.del(key);              <span class="comment">// evict expired entries</span>
+      }
+    });
+  });
+
+  <span class="comment">// 5. Init barba with transitions and views config</span>
+  barba.init({ ... });
+
+  <span class="comment">// 6. Cache current page and set timeout to 1ms briefly</span>
+  handleRouteCaching(window.location.origin + window.location.pathname);
+  barba.timeout = 1;   <span class="comment">// fast initial, restored to 4000ms after IDB load</span>
+
+  initialized = <span class="value">true</span>;
+};</div>
+
+      <div class="highlight-box">
+        <strong>Why timeout juggling?</strong> On first load, <code>barba.timeout</code> is set to 1ms to prevent any accidental blocking. Once the IDB cache is loaded (100ms delay), it's restored to 4000ms (or 30000ms for local dev). This prevents the IDB restoration from blocking the initial page render.
+      </div>
+
+      <span class="file-ref">assets/page-transitions.ts:22-436</span>
+    </div>
+
+
+    <div class="divider"></div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 5: NAVIGATION LIFECYCLE                             -->
+    <!-- ============================================================ -->
+
+    <div id="lifecycle" class="section-header">
+      <h2>5. Navigation Lifecycle &mdash; The 6 Hooks</h2>
+      <p>What happens at each stage when the user clicks a link. Barba fires these hooks in order.</p>
+    </div>
+
+    <div class="lifecycle-grid">
+
+      <div class="node js">
+        <span class="node-tag js">Hook 1</span>
+        <h3><code>beforeLeave</code></h3>
+        <p>Fires immediately on link click, before any visual change. Used to clean up current page state.</p>
+        <div class="code-block"><span class="comment">// Close any open modals</span>
+<span class="keyword">window</span>._stores?.modal?.setId(<span class="string">""</span>);
+<span class="keyword">window</span>._stores?.modal?.setSubId(<span class="string">""</span>);</div>
+        <div class="highlight-box">
+          <strong>Why here?</strong> Modals overlay the transition. If we close them after the overlay appears, the user sees a flash of modal content behind the overlay.
+        </div>
+      </div>
+
+      <div class="node js">
+        <span class="node-tag js">Hook 2</span>
+        <h3><code>leave</code> (transition)</h3>
+        <p>The visual transition begins. The overlay slides in from the left with the brand logo.</p>
+        <div class="code-block"><span class="comment">// Slide the overlay in</span>
+transitionOverlay?.classList.add(
+  <span class="string">"active"</span>, <span class="string">"out-active"</span>
+);
+<span class="comment">// CSS handles the animation:
+// .active = opacity-100, translate-x-0
+// .out-active = controls exit direction</span></div>
+      </div>
+
+      <div class="node js">
+        <span class="node-tag js">Hook 3</span>
+        <h3><code>afterLeave</code></h3>
+        <p>Old page content is still in the DOM but hidden behind the overlay. Router store is updated with the new location.</p>
+        <div class="code-block">routerStore.setValue(<span class="string">"pathname"</span>, window.location.pathname);
+routerStore.setValue(<span class="string">"search"</span>, window.location.search);
+routerStore.setValue(<span class="string">"template"</span>,
+  data?.next?.container?.getAttribute(<span class="string">"data-template"</span>)
+);</div>
+        <div class="highlight-box">
+          <strong>Why update the router store here?</strong> Alpine components that react to <code>$router.template</code> (like header variants) need to update before the new content is visible, so the correct header state is ready when the overlay clears.
+        </div>
+      </div>
+
+      <div class="node js">
+        <span class="node-tag js">Hook 4</span>
+        <h3><code>beforeEnter</code></h3>
+        <p>New content is in the DOM but not yet visible. Clears deferred component states.</p>
+        <div class="code-block"><span class="comment">// Reset x-defer-active so lazy components
+// re-evaluate their intersection triggers</span>
+data?.next?.container
+  ?.querySelectorAll(<span class="string">"[x-defer-active]"</span>)
+  .forEach(el => el.removeAttribute(<span class="string">"x-defer-active"</span>));</div>
+      </div>
+
+      <div class="node js">
+        <span class="node-tag js">Hook 5</span>
+        <h3><code>enter</code> (transition)</h3>
+        <p>The overlay slides out, revealing new content. Handles scroll position with sticky header compensation.</p>
+        <div class="code-block"><span class="comment">// Remove active class to trigger CSS slide-out</span>
+transitionOverlay?.classList.remove(<span class="string">"active"</span>);
+
+<span class="comment">// Scroll to top, compensating for sticky header
+// Uses IntersectionObserver to verify scroll
+// position after header repositioning</span>
+scrollToTopWithStickyCompensation();</div>
+      </div>
+
+      <div class="node js">
+        <span class="node-tag js">Hook 6</span>
+        <h3><code>afterEnter</code> &mdash; The Big One</h3>
+        <p>New content is visible. This hook does the heavy lifting: removes old container, re-executes scripts, re-initializes third-party widgets. <strong>This is where most bugs live.</strong></p>
+        <div class="code-block"><span class="comment">// See next section for full breakdown</span>
+data?.current?.container?.remove();
+<span class="comment">// ... script re-execution ...</span>
+<span class="comment">// ... third-party re-init ...</span></div>
+      </div>
+
+    </div>
+
+    <span class="file-ref" style="display: block; text-align: center; margin-top: 12px;">assets/page-transitions.ts:198-420</span>
+
+
+    <div class="divider"></div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 6: SCRIPT RE-EXECUTION                              -->
+    <!-- ============================================================ -->
+
+    <div id="scripts" class="section-header">
+      <h2>6. Script Re-execution &mdash; The Hard Part</h2>
+      <p>When Barba swaps the container, <code>&lt;script&gt;</code> tags in the new HTML are inert text. They must be manually re-executed.</p>
+    </div>
+
+    <div class="node js">
+      <div class="step-title">
+        <span class="step-number orange">4</span>
+        <span class="node-tag js">Script Handling</span>
+      </div>
+      <h3>The 5-Step Script Re-execution Pipeline</h3>
+      <p>After a 60ms delay (to let Alpine process the new DOM), we parse the full HTML response and systematically re-inject scripts. The order matters.</p>
+
+      <div class="code-block"><span class="comment">// Step A: Re-execute product data init scripts</span>
+<span class="comment">//   These set up window._recent_products and preload links</span>
+<span class="keyword">const</span> <span class="prop">productDataContainer</span> = data.next.container?.querySelector(<span class="string">"[data-product-data-init]"</span>);
+<span class="keyword">if</span> (productDataContainer) {
+  <span class="keyword">const</span> newScript = document.createElement(<span class="string">"script"</span>);
+  newScript.innerHTML = productDataContainer.innerText;
+  document.head.appendChild(newScript);  <span class="comment">// executes immediately when appended</span>
+}
+
+<span class="comment">// Step B: Replace Shopify app blocks in-place</span>
+<span class="comment">//   App blocks exist outside our container, so we match by ID</span>
+html.querySelectorAll(<span class="string">".shopify-block.shopify-app-block"</span>).forEach(element => {
+  <span class="keyword">const</span> current = document.getElementById(element.id);
+  current.parentNode.replaceChild(element, current);
+});
+
+<span class="comment">// Step C: Inject NEW external scripts (&lt;script src="..."&gt;)</span>
+<span class="comment">//   Only scripts NOT already in &lt;head&gt; &mdash; prevents double-loading</span>
+html.querySelectorAll(<span class="string">":not([data-content-root]) script[src]"</span>).forEach(script => {
+  <span class="keyword">if</span> (!document.head.querySelector(`script[src*="${script.src.split('/').at(-1)}"]`)) {
+    <span class="keyword">const</span> newScript = document.createElement(<span class="string">"script"</span>);
+    newScript.src = `${script.src}?v_id=${Date.now()}`;  <span class="comment">// cache bust</span>
+    document.head.appendChild(newScript);
+  }
+});
+
+<span class="comment">// Step D: Re-execute inline scripts inside content root</span>
+<span class="comment">//   Excludes: scripts with src, product data JSON, application/json</span>
+document.querySelectorAll(<span class="string">"[data-content-root] script:not(...)"</span>).forEach(script => {
+  <span class="keyword">const</span> newScript = document.createElement(<span class="string">"script"</span>);
+  newScript.innerHTML = script.innerHTML;
+  script.parentNode.replaceChild(newScript, script);
+});
+
+<span class="comment">// Step E: Re-execute content root scripts with src</span>
+document.querySelectorAll(<span class="string">"[data-content-root] script[src]"</span>).forEach(script => {
+  <span class="keyword">const</span> newScript = document.createElement(<span class="string">"script"</span>);
+  newScript.src = `${script.src}?v_id=${Date.now()}`;  <span class="comment">// cache bust</span>
+  script.parentNode.replaceChild(newScript, script);
+});</div>
+
+      <div class="highlight-box">
+        <strong>Why <code>replaceChild</code> instead of just <code>appendChild</code>?</strong> When a <code>&lt;script&gt;</code> is inserted via <code>innerHTML</code>, the browser treats it as inert text. Creating a new <code>&lt;script&gt;</code> element and replacing the old one forces the browser to evaluate it. This is how all SPA-like frameworks handle script execution in dynamically inserted HTML.
+      </div>
+
+      <div class="highlight-box">
+        <strong>Why cache-busting with <code>?v_id={timestamp}</code>?</strong> Without it, the browser might serve the script from disk cache without re-executing. The timestamp ensures a fresh evaluation even if the URL is the same script.
+      </div>
+
+      <span class="file-ref">assets/page-transitions.ts:290-383</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down orange"></div></div>
+
+    <div class="node js">
+      <span class="node-tag js">Third-Party Re-init</span>
+      <h3>Dispatching Events &amp; Re-initializing Third-Party Widgets</h3>
+      <p>After scripts are re-executed, we fire synthetic events and manually poke third-party libraries that depend on page-load events.</p>
+
+      <div class="code-block"><span class="keyword">requestIdleCallback</span>(() => {
+  <span class="comment">// Re-fire events that scripts listen for</span>
+  document.dispatchEvent(<span class="keyword">new</span> Event(<span class="string">"DOMContentLoaded"</span>));
+  window.dispatchEvent(<span class="keyword">new</span> Event(<span class="string">"DOMContentLoaded"</span>));
+  document.dispatchEvent(<span class="keyword">new</span> CustomEvent(<span class="string">"pageFullyLoaded"</span>));
+
+  <span class="comment">// Manually call re-init on known third-party APIs</span>
+  Shopify?.PaymentButton?.init();           <span class="comment">// Shopify dynamic checkout buttons</span>
+  window?.okeWidgetApi?.initAllWidgets();   <span class="comment">// Okendo reviews</span>
+  window?.yotpoWidgetsContainer?.initWidgets();  <span class="comment">// Yotpo reviews</span>
+  window?.loyaltylion?.ui?.refresh();       <span class="comment">// LoyaltyLion points</span>
+
+  <span class="comment">// Okendo is notoriously slow to bind, so retry</span>
+  setTimeout(() => window?.okeWidgetApi?.initAllWidgets(), 1000);
+  setTimeout(() => window?.okeWidgetApi?.initAllWidgets(), 3000);
+}, { timeout: 5000 });</div>
+
+      <div class="highlight-box warn">
+        <strong>The ugly truth:</strong> Each third-party app that doesn't work after transitions requires a custom integration line here. There is no generic solution. When a new app is installed and "doesn't work after navigating," this is the first place to look.
+      </div>
+
+      <span class="file-ref">assets/page-transitions.ts:396-416</span>
+    </div>
+
+
+    <div class="divider"></div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 7: PREFETCH & CACHING                               -->
+    <!-- ============================================================ -->
+
+    <div id="prefetch" class="section-header">
+      <h2>7. Prefetch &amp; Caching Layer</h2>
+      <p>How pages are pre-loaded before the user even clicks, and how product data is extracted from prefetched HTML.</p>
+    </div>
+
+    <div class="node step">
+      <div class="step-title">
+        <span class="step-number blue">5</span>
+        <span class="node-tag step">Data Flow</span>
+      </div>
+      <h3>The Prefetch Pipeline</h3>
+      <p>This runs in a <code>requestIdleCallback</code> so it never blocks the main thread.</p>
+
+      <div class="code-block"><span class="comment">// 1. User hovers a link (or it enters viewport)</span>
+<span class="comment">//    barba-prefetch fetches the HTML in the background</span>
+
+<span class="comment">// 2. "barba:prefetch:fulfilled" fires</span>
+<span class="comment">//    We intercept this event and extract product data from the HTML</span>
+
+<span class="comment">// 3. Parse the HTML, find all [data-product-data] script tags</span>
+<span class="keyword">const</span> div = document.createElement(<span class="string">"div"</span>);
+div.innerHTML = fetchResults?.data?.html;
+<span class="keyword">const</span> productData = div.querySelectorAll(<span class="string">`[data-product-data]`</span>);
+
+<span class="comment">// 4. For each product found, merge into _products cache</span>
+<span class="comment">//    Using the existing/IDB fallback pattern to preserve full data</span>
+productData?.forEach(<span class="keyword">async</span> (scriptElement) => {
+  <span class="keyword">const</span> product = JSON.parse(scriptElement.innerHTML);
+  <span class="keyword">const</span> existing = _products[product.handle] ?? (<span class="keyword">await</span> idbKeyval.get(dbKey)) ?? {};
+  _products[product.handle] = {
+    ...existing,
+    ...(product?._full_data ? product : existing?._full_data ? existing : product),
+  };
+  <span class="keyword">await</span> idbKeyval.set(dbKey, _products[product.handle]);
+});
+
+<span class="comment">// 5. Cache the full barba response in IDB for cross-session reuse</span>
+<span class="keyword">await</span> idbKeyval.set(`barba-prefetch---${startTime}-//-${url}`, fetchResults);</div>
+
+      <div class="highlight-box tip">
+        <strong>Cross-session caching:</strong> Barba prefetched pages are stored in IndexedDB with a timestamp prefix. On the next page load, entries less than 10 minutes old are restored into Barba's memory cache. This means if a user returns within 10 minutes, previously prefetched pages are instantly available without re-fetching.
+      </div>
+
+      <div class="highlight-box">
+        <strong>Product data pre-warming:</strong> The prefetch doesn't just cache HTML. It extracts product JSON from <code>[data-product-data]</code> script tags and merges them into the in-memory <code>_products</code> store. When the user navigates to that product, the data is already available &mdash; no loading state needed.
+      </div>
+
+      <span class="file-ref">assets/page-transitions.ts:92-166</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="shopify-cache" class="section-header">
+      <h2>8. Custom Shopify Cache Layer (Not Stock Barba)</h2>
+      <p>The caching and URL normalization layer that makes Barba work with Shopify's URL structure. This is entirely custom &mdash; not part of the Barba.js package.</p>
+    </div>
+
+    <div class="node js">
+      <div class="step-title">
+        <span class="step-number orange">6</span>
+        <span class="node-tag js">Custom Shopify Logic</span>
+      </div>
+      <h3>URL Normalization &mdash; <code>getShopifyCacheUrl</code></h3>
+      <p>Shopify appends tracking params, UTM params, and collection-scoped paths to URLs. Without normalization, the same page gets cached under dozens of different keys. This function is the backbone of our custom caching layer.</p>
+
+      <div class="code-block"><span class="keyword">const</span> <span class="prop">getShopifyCacheUrl</span> = (href: <span class="value">string</span>) => {
+  <span class="keyword">const</span> url = <span class="keyword">new</span> URL(href);
+  <span class="keyword">const</span> searchParams: <span class="value">string</span>[] = [];
+
+  <span class="keyword">for</span> (<span class="keyword">const</span> [key, value] <span class="keyword">of</span> url.searchParams) {
+    <span class="comment">// ONLY keep params that change page content:</span>
+    <span class="keyword">if</span> (key === <span class="string">"page"</span>)        searchParams.push(`${key}=${value}`);
+    <span class="keyword">if</span> (key === <span class="string">"sort_by"</span>)     searchParams.push(`${key}=${value}`);
+    <span class="keyword">if</span> (<span class="value">/^filter\./gi</span>.test(key)) searchParams.push(`${key}=${value}`);
+    <span class="comment">// Everything else is STRIPPED: utm_*, fbclid, gclid,</span>
+    <span class="comment">// _pos, _ss, _v, variant, selling_plan, etc.</span>
+  }
+
+  <span class="comment">// Sort params for consistent cache keys regardless of order</span>
+  <span class="keyword">const</span> sorted = [...searchParams].sort();
+
+  <span class="comment">// Normalize collection-scoped product URLs:</span>
+  <span class="comment">// /collections/summer-sale/products/blue-shirt → /products/blue-shirt</span>
+  <span class="comment">// This prevents duplicate cache entries for the same product</span>
+  <span class="keyword">return</span> href.split(<span class="value">/[?#&]/</span>)[0]
+    .replace(<span class="value">/(\/collections\/[^/]*\/)/gi</span>, <span class="string">"/"</span>)
+    + (sorted.length ? `?${sorted.join(<span class="string">"&"</span>)}` : <span class="string">""</span>);
+};</div>
+
+      <div class="highlight-box">
+        <strong>Why this matters:</strong> A single product like <code>/products/blue-shirt</code> can be reached via <code>/collections/summer/products/blue-shirt?utm_source=email&amp;fbclid=abc</code>, <code>/collections/new/products/blue-shirt?_pos=1&amp;_ss=12</code>, or just <code>/products/blue-shirt</code>. Without normalization, that's 3+ separate cache entries for identical content. With it, they all resolve to one key: <code>/products/blue-shirt</code>.
+      </div>
+
+      <div class="highlight-box tip">
+        <strong>Only content-changing params survive:</strong> <code>page</code> (pagination), <code>sort_by</code> (collection sort), and <code>filter.*</code> (collection filters) are the only params that produce different server responses. Everything else is tracking or UI state that doesn't affect the HTML.
+      </div>
+
+      <span class="file-ref">assets/utils.ts:1068-1094</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down orange"></div></div>
+
+    <div class="node js">
+      <span class="node-tag js">Custom Shopify Logic</span>
+      <h3><code>fetchFromCache</code> &mdash; Three-Tier Cache Layer</h3>
+      <p>Beyond page transitions, we expose Barba's cache as a general-purpose fetch utility. This is used by sibling product loading, search, blog pagination, and anywhere else that fetches full Shopify pages.</p>
+
+      <div class="code-block"><span class="keyword">const</span> <span class="prop">fetchFromCache</span> = <span class="keyword">async</span> (urlString, options) => {
+  <span class="keyword">const</span> cacheUrl = getShopifyCacheUrl(urlString);
+
+  <span class="comment">// Tier 1: Check Barba's in-memory cache</span>
+  <span class="keyword">let</span> cache = barba.cache.get(cacheUrl);
+
+  <span class="comment">// Tier 2: Fall back to IndexedDB</span>
+  <span class="keyword">if</span> (!cache?.request) {
+    <span class="keyword">const</span> key = (<span class="keyword">await</span> idbKeyval.keys())
+      .find(k => k.includes(cacheUrl));
+    <span class="keyword">if</span> (key) {
+      cache = barba.cache.set(cacheUrl,
+        idbKeyval.get(key).then(res => res?.data), <span class="string">"prefetch"</span>);
+    }
+  }
+
+  <span class="comment">// Tier 3: Fetch from network (force-cache for CDN hits)</span>
+  <span class="keyword">if</span> (!cache?.request) {
+    <span class="keyword">const</span> data = fetch(urlString, {
+      credentials: <span class="string">"same-origin"</span>,
+      cache: <span class="string">"force-cache"</span>,  <span class="comment">// CDN cache hit when possible</span>
+    }).then(res => res.text()).then(html => ({ html, url: ... }));
+
+    cache = barba.cache.set(cacheUrl, data, <span class="string">"prefetch"</span>);
+    <span class="comment">// Fire the prefetch event so product data gets extracted</span>
+    document.dispatchEvent(
+      <span class="keyword">new</span> CustomEvent(<span class="string">"barba:prefetch:fulfilled"</span>, { detail: { url: cacheUrl } })
+    );
+  }
+
+  <span class="keyword">return</span> html;
+};</div>
+
+      <div class="highlight-box">
+        <strong>Why reuse Barba's cache for non-navigation fetches?</strong> If the user hovered a product link (triggering a prefetch), and then a section calls <code>fetchFromCache("/products/blue-shirt")</code> to load sibling data, it gets the already-cached HTML for free. One fetch serves both the transition and the data layer.
+      </div>
+
+      <span class="file-ref">assets/utils.ts:1096-1150</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down orange"></div></div>
+
+    <div class="node js">
+      <span class="node-tag js">Custom Shopify Logic</span>
+      <h3>Account Route Purging &amp; Collection URL Cleanup</h3>
+      <p>Two cleanup operations that run at different times to keep the cache safe.</p>
+
+      <div class="code-block"><span class="comment">// On init: purge any /account routes from Barba's cache</span>
+<span class="comment">// Account pages contain personal data that must never be served from cache</span>
+[...(barba.cache.keys() ?? [])].forEach(key => {
+  <span class="keyword">if</span> (key.includes(<span class="string">"/account"</span>)) {
+    barba.cache.delete(key);
+  }
+});
+
+<span class="comment">// On IDB restore: same check — delete account entries from IndexedDB</span>
+res.forEach(<span class="keyword">async</span> (key) => {
+  <span class="keyword">if</span> (key.includes(<span class="string">"/account"</span>)) {
+    idbKeyval.del(key);
+    <span class="keyword">return</span>;
+  }
+  <span class="comment">// ... restore valid entries ...</span>
+});
+
+<span class="comment">// On prefetch fulfilled: strip collection prefix from URL</span>
+<span class="comment">// e.detail.url.replace(/(\/collections\/[^/]*\/)/gi, "/")</span>
+<span class="comment">// Ensures handleRouteCaching receives the normalized URL</span></div>
+
+      <div class="highlight-box warn">
+        <strong>Security note:</strong> Account routes (<code>/account</code>, <code>/account/orders</code>, etc.) contain PII. If they were cached in IDB and the browser is shared, another user could see them served from cache. Both the Barba memory cache and IDB are purged on every initialization. These routes are also in the <code>prefetchIgnore</code> and <code>cacheIgnore</code> lists so they never enter the cache in the first place &mdash; the purge is a safety net.
+      </div>
+
+      <span class="file-ref">assets/page-transitions.ts:134-135, 142-157, 424-428</span>
+    </div>
+
+
+    <div class="divider"></div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 8: LIMITATIONS                                      -->
+    <!-- ============================================================ -->
+
+    <div id="limitations" class="section-header">
+      <h2>9. Common Limitations &amp; Gotchas</h2>
+      <p>The things that break, why they break, and what you can do about them.</p>
+    </div>
+
+    <div class="node warn">
+      <div class="step-title">
+        <span class="step-number red">!</span>
+        <span class="node-tag warn">Limitation</span>
+      </div>
+      <h3>External Scripts That Bind Once</h3>
+      <p>Many third-party scripts (reviews, loyalty, analytics) run once on <code>DOMContentLoaded</code> and assume they'll never need to run again. After a Barba transition, their DOM targets are gone but their event listeners point to removed elements.</p>
+
+      <div class="highlight-box warn">
+        <strong>Symptoms:</strong> Widget shows on first load but disappears after navigation. Or worse: widget appears but is non-interactive (click handlers bound to the old DOM).
+      </div>
+
+      <div class="highlight-box">
+        <strong>Solutions (in order of preference):</strong><br>
+        1. <strong>Check for an API</strong> &mdash; many apps expose <code>init()</code> or <code>refresh()</code> methods. Call them in the <code>afterEnter</code> hook.<br>
+        2. <strong>Re-fire DOMContentLoaded</strong> &mdash; we already do this, and it works for scripts that listen for it. But scripts that check <code>document.readyState === 'loading'</code> won't re-fire their handler because readyState is already <code>'complete'</code>.<br>
+        3. <strong>Add the route to ignore list</strong> &mdash; last resort. If a page depends heavily on a third-party script that can't be re-initialized, exclude it from transitions entirely.
+      </div>
+    </div>
+
+    <div class="connector"><div class="arrow-down red"></div></div>
+
+    <div class="node warn">
+      <span class="node-tag warn">Limitation</span>
+      <h3>Scripts Using <code>document.write()</code></h3>
+      <p><code>document.write()</code> after the page has loaded will replace the entire document. Some legacy third-party scripts use this pattern. There is no workaround &mdash; these routes must be excluded.</p>
+    </div>
+
+    <div class="connector"><div class="arrow-down red"></div></div>
+
+    <div class="node warn">
+      <span class="node-tag warn">Limitation</span>
+      <h3>Memory Leaks from Persistent Event Listeners</h3>
+      <p>Event listeners added to <code>window</code> or <code>document</code> by scripts inside the swapped container are never cleaned up. After many navigations, hundreds of orphaned listeners can accumulate.</p>
+
+      <div class="highlight-box">
+        <strong>Our mitigation:</strong> Alpine.js handles this via its tree destruction (<code>Alpine.destroyTree</code>) for x-data components. But raw <code>addEventListener</code> calls in inline scripts or third-party code will leak. For internal scripts, prefer Alpine directives (<code>@resize.window</code>, <code>@scroll.window</code>) which auto-cleanup.
+      </div>
+    </div>
+
+    <div class="connector"><div class="arrow-down red"></div></div>
+
+    <div class="node warn">
+      <span class="node-tag warn">Limitation</span>
+      <h3><code>readyState</code> Checks vs Event Listeners</h3>
+      <p>Scripts that use this pattern will NOT work after transitions:</p>
+      <div class="code-block"><span class="comment">// This BREAKS after Barba transitions:</span>
+<span class="keyword">if</span> (document.readyState === <span class="string">"loading"</span>) {
+  document.addEventListener(<span class="string">"DOMContentLoaded"</span>, init);
+} <span class="keyword">else</span> {
+  init(); <span class="comment">// runs immediately, but only on first load</span>
+}
+
+<span class="comment">// This WORKS because we re-dispatch the event:</span>
+document.addEventListener(<span class="string">"DOMContentLoaded"</span>, init);</div>
+
+      <div class="highlight-box">
+        <strong>Why:</strong> After the initial page load, <code>document.readyState</code> is permanently <code>"complete"</code>. The <code>else</code> branch runs immediately during script evaluation, which is fine. But if the script uses a module pattern that only calls <code>init()</code> inside the <code>if</code> branch (checking for <code>"loading"</code>), it will never fire again because the document is already loaded.
+      </div>
+    </div>
+
+    <div class="connector"><div class="arrow-down red"></div></div>
+
+    <div class="node warn">
+      <span class="node-tag warn">Limitation</span>
+      <h3>Shopify App Blocks Need Special Handling</h3>
+      <p>Shopify app blocks (<code>.shopify-block.shopify-app-block</code>) exist in the section group, not inside the Barba container. They're matched by ID and replaced in-place rather than swapped with the container.</p>
+
+      <div class="highlight-box">
+        <strong>Why this is fragile:</strong> If an app block changes its ID format, or if two app blocks have the same ID across different pages, the replacement will silently fail or target the wrong element. Always test app blocks across page transitions.
+      </div>
+    </div>
+
+
+    <div class="divider"></div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 9: RENDER TABS                                      -->
+    <!-- ============================================================ -->
+
+    <div id="render-tabs" class="section-header">
+      <h2>10. Render Tabs System</h2>
+      <p>How sections can define tabbed content in Liquid, composed into functional tabs by the layout at render time.</p>
+    </div>
+
+    <div class="node liquid">
+      <div class="step-title">
+        <span class="step-number green">6</span>
+        <span class="node-tag liquid">Liquid Architecture</span>
+      </div>
+      <h3>The Problem Render Tabs Solves</h3>
+      <p>Shopify sections can't communicate with each other. If three sections inside a section group each want to define a tab, there's no way for them to coordinate a shared tab bar. Render Tabs solves this by <strong>post-processing the rendered HTML at the layout level</strong> using Liquid string manipulation.</p>
+
+      <div class="highlight-box tip">
+        <strong>Key insight:</strong> Sections render their content into a single <code>capture</code> variable. Before outputting it, we pass it through <code>_layout.render_tabs</code> which scans for marker tags, extracts tab labels, generates the navigation buttons, and wires up the Alpine data binding. All in pure Liquid &mdash; no JavaScript needed for the composition step.
+      </div>
+    </div>
+
+    <div class="connector"><div class="arrow-down green"></div></div>
+
+    <div class="node liquid">
+      <span class="node-tag liquid">Liquid</span>
+      <h3>How Sections Declare Tabs</h3>
+      <p>A section that wants to participate in tabs wraps its content with marker tags. These are custom HTML elements that get stripped out by the Render Tabs processor.</p>
+
+      <div class="code-block"><span class="comment">&lt;!-- Inside a section's Liquid template --&gt;</span>
+
+<span class="comment">&lt;!-- 1. Declare which tab group this belongs to (0 or 1) --&gt;</span>
+<span class="tag">&lt;tab-content-group&gt;</span>0<span class="tag">&lt;/tab-content-group&gt;</span>
+
+<span class="comment">&lt;!-- 2. Set the tab's label --&gt;</span>
+<span class="tag">&lt;tab-content-label&gt;</span>Description<span class="tag">&lt;/tab-content-label&gt;</span>
+
+<span class="comment">&lt;!-- 3. The actual content (shown/hidden by Alpine) --&gt;</span>
+<span class="tag">&lt;div</span> <span class="attr">data-tab-group</span>=<span class="string">"0"</span>
+     <span class="attr">data-tab-id</span>=<span class="string">"Description"</span>
+     <span class="attr">x-show</span>=<span class="string">"$tabs[$el.closest('[id]').id]?.current_tabs[0] === 'Description'"</span><span class="tag">&gt;</span>
+  ... tab content here ...
+<span class="tag">&lt;/div&gt;</span>
+
+<span class="comment">&lt;!-- 4. Declare where the tab navigation should appear --&gt;</span>
+<span class="tag">&lt;tab-navigation&gt;</span>
+  <span class="tag">&lt;tab-label&gt;</span>[label]<span class="tag">&lt;/tab-label&gt;</span>              <span class="comment">&lt;!-- plain text label --&gt;</span>
+  <span class="tag">&lt;tab-label-richtext&gt;</span>[label]<span class="tag">&lt;/tab-label-richtext&gt;</span>  <span class="comment">&lt;!-- rich label (can contain HTML) --&gt;</span>
+  <span class="tag">&lt;tab-group&gt;</span>0<span class="tag">&lt;/tab-group&gt;</span>                    <span class="comment">&lt;!-- which group's tabs to render --&gt;</span>
+  <span class="tag">&lt;tab-button-class&gt;</span>my-tab-btn<span class="tag">&lt;/tab-button-class&gt;</span>  <span class="comment">&lt;!-- CSS class for buttons --&gt;</span>
+  <span class="tag">&lt;tab-hover-trigger&gt;</span>false<span class="tag">&lt;/tab-hover-trigger&gt;</span>  <span class="comment">&lt;!-- tabs switch on hover? --&gt;</span>
+  <span class="tag">&lt;tab-navigation-buttons-placeholder /&gt;</span>    <span class="comment">&lt;!-- replaced with actual buttons --&gt;</span>
+<span class="tag">&lt;/tab-navigation&gt;</span></div>
+    </div>
+
+    <div class="connector"><div class="arrow-down green"></div></div>
+
+    <div class="node liquid">
+      <span class="node-tag liquid">Liquid Processing</span>
+      <h3>What <code>_layout.render_tabs</code> Does</h3>
+      <p>The snippet receives the entire section group HTML as a single string and transforms it.</p>
+
+      <div class="code-block"><span class="comment">// Pseudocode of the Liquid processing:</span>
+
+1. Split HTML by <span class="string">'id="shopify-section'</span> to get individual sections
+2. For each section that contains <span class="string">'&lt;tab-content-label&gt;'</span>:
+   a. Extract all tab labels from <span class="string">&lt;tab-content-label&gt;...&lt;/tab-content-label&gt;</span>
+   b. Group them by <span class="string">&lt;tab-content-group&gt;0|1&lt;/tab-content-group&gt;</span>
+   c. For each <span class="string">&lt;tab-navigation&gt;</span> block:
+      - Read the button class, hover trigger, label template
+      - Generate one <span class="string">&lt;button&gt;</span> per tab label with Alpine <span class="string">@click</span> bindings
+      - Replace <span class="string">&lt;tab-navigation-buttons-placeholder /&gt;</span> with the buttons
+      - Strip the <span class="string">&lt;tab-navigation&gt;</span> wrapper
+   d. Add <span class="string">x-cloak</span> to all tabs except the first (prevents flash)
+3. Add <span class="string">data-tabs="{...}"</span> and <span class="string">x-data="{..._sections.initTabs($el)}"</span>
+   to the section wrapper</div>
+
+      <div class="highlight-box">
+        <strong>The generated button markup:</strong>
+      </div>
+
+      <div class="code-block"><span class="tag">&lt;button</span> <span class="attr">type</span>=<span class="string">"button"</span>
+        <span class="attr">@click</span>=<span class="string">"current_tabs[0] = 'Description'"</span>
+        <span class="attr">:class</span>=<span class="string">"current_tabs[0] === 'Description' ? 'active' : ''"</span>
+        <span class="attr">class</span>=<span class="string">"shrink-0 my-tab-btn"</span><span class="tag">&gt;</span>
+  Description
+<span class="tag">&lt;/button&gt;</span></div>
+
+      <span class="file-ref">snippets/_layout.render_tabs.liquid</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down green"></div></div>
+
+    <div class="node js">
+      <span class="node-tag js">JavaScript Runtime</span>
+      <h3>The <code>initTabs</code> Alpine Component</h3>
+      <p>When the section initializes, Alpine reads the <code>data-tabs</code> attribute and populates the <code>$tabs</code> store. It also sets up responsive breakpoint watchers to auto-switch tabs if the current tab becomes hidden (e.g. a tab with <code>visible_if</code> that hides on mobile).</p>
+
+      <div class="code-block"><span class="comment">// tabs.ts - simplified</span>
+<span class="keyword">export const</span> <span class="prop">initTabs</span> = ($el) => {
+  <span class="keyword">const</span> tabs = Alpine.store(<span class="string">"tabs"</span>);
+
+  tabs[$el.id] = {
+    <span class="attr">tabs</span>: raw_tabs.map(t => t.split(<span class="string">"|%S%|"</span>)),
+    <span class="attr">current_tabs</span>: raw_tabs.map(t => t.split(<span class="string">"|%S%|"</span>)[0]),
+  };
+
+  <span class="comment">// Watch breakpoints to auto-switch hidden tabs</span>
+  [480, 640, 768, 1024, 1280, 1536].forEach(px => {
+    matchMedia(`(min-width: ${px}px)`).addEventListener(<span class="string">"change"</span>, ensureNoHiddenTabs);
+  });
+
+  <span class="keyword">return</span> tabs[$el.id];
+};</div>
+
+      <span class="file-ref">assets/tabs.ts</span>
+    </div>
+
+    <div class="connector"><div class="arrow-down green"></div></div>
+
+    <div class="node css">
+      <span class="node-tag css">Reasoning</span>
+      <h3>Why This Architecture for Tabs?</h3>
+      <p>This approach is unusual. Most tab systems use JavaScript to scan the DOM and generate navigation. Why does Accelerate-Z do it in Liquid?</p>
+
+      <div class="highlight-box tip">
+        <strong>1. No layout shift.</strong> Tab navigation is rendered server-side in the initial HTML. There's no JavaScript that runs, scans for tabs, then injects buttons &mdash; which would cause a visible layout shift.<br><br>
+        <strong>2. Sections stay independent.</strong> Each section declares its tabs without importing anything or knowing about its siblings. The layout composes them together. This is the same principle as Alpine stores &mdash; decoupled producers and consumers.<br><br>
+        <strong>3. Theme Editor compatibility.</strong> Because tabs are in the HTML, the Theme Editor can show/hide sections and the tab navigation updates on the next render. A JS-based system would need custom editor integration.<br><br>
+        <strong>4. Two tab groups per section.</strong> The <code>&lt;tab-content-group&gt;0|1&lt;/tab-content-group&gt;</code> system allows a section to have two independent tab bars (e.g. main content tabs + sidebar tabs) without additional complexity.
+      </div>
+    </div>
+
+
+    <div class="divider"></div>
+
+
+    <!-- ============================================================ -->
+    <!--  SECTION 10: LIQUID VARIABLE HACKING                         -->
+    <!-- ============================================================ -->
+
+    <div id="variable-hacking" class="section-header">
+      <h2>11. Liquid Variable Hacking for Theme Blocks</h2>
+      <p>Techniques for getting data in and out of places Shopify doesn't want you to.</p>
+    </div>
+
+    <div class="node liquid">
+      <div class="step-title">
+        <span class="step-number green">7</span>
+        <span class="node-tag liquid">Liquid Technique</span>
+      </div>
+      <h3>The Problem: Sections Can't Share Variables</h3>
+      <p>In Shopify Liquid, each section renders in isolation. You can't <code>assign</code> a variable in Section A and read it in Section B. But sometimes you need cross-section coordination &mdash; like telling the header what color scheme the hero is using, or passing product data between a PDP and a recommendations section.</p>
+
+      <div class="highlight-box">
+        <strong>The workaround:</strong> The layout captures all section HTML into a string variable, then manipulates that string before outputting it. Since the HTML is just a string at that point, you can split, replace, and recombine it freely.
+      </div>
+    </div>
+
+    <div class="connector"><div class="arrow-down green"></div></div>
+
+    <div class="node liquid">
+      <span class="node-tag liquid">Liquid Technique</span>
+      <h3>Pattern 1: Capture &amp; Post-Process</h3>
+      <p>This is what Render Tabs uses, and the pattern extends to any cross-section transformation. The layout captures the full output, then runs it through processing snippets.</p>
+
+      <div class="code-block"><span class="comment">&lt;!-- layout/theme.liquid --&gt;</span>
+
+<span class="comment">&lt;!-- Capture all header sections into a single string --&gt;</span>
+<span class="liquid">{% capture content %}{% sections '0_header' %}{% endcapture %}</span>
+
+<span class="comment">&lt;!-- Run the string through a processing snippet --&gt;</span>
+<span class="liquid">{% render '_layout.merge_styles', input: content %}</span>
+
+<span class="comment">&lt;!-- Or the Render Tabs processor --&gt;</span>
+<span class="liquid">{% render '_layout.render_tabs', content: core_content %}</span>
+
+<span class="comment">&lt;!-- The snippet can split/replace/recombine the HTML string
+     before it's output to the page --&gt;</span></div>
+
+      <div class="highlight-box tip">
+        <strong>Key enabler:</strong> <code>{% sections 'group_name' %}</code> renders all sections in a group and returns their combined HTML. By capturing this into a variable instead of outputting it directly, we get a chance to transform it.
+      </div>
+    </div>
+
+    <div class="connector"><div class="arrow-down green"></div></div>
+
+    <div class="node liquid">
+      <span class="node-tag liquid">Liquid Technique</span>
+      <h3>Pattern 2: Marker Tags as Data Channels</h3>
+      <p>Custom HTML elements like <code>&lt;tab-content-label&gt;</code> are intentionally used as structured markers. The browser ignores unknown tags, so even if the processing fails, they're harmless in the output.</p>
+
+      <div class="code-block"><span class="comment">&lt;!-- Section outputs a marker (invisible to the user) --&gt;</span>
+<span class="tag">&lt;tab-content-label&gt;</span>Reviews<span class="tag">&lt;/tab-content-label&gt;</span>
+
+<span class="comment">&lt;!-- Layout snippet extracts it via string splitting --&gt;</span>
+<span class="liquid">{% assign tab_content = section_html | split: '&lt;tab-content-label&gt;' %}</span>
+<span class="liquid">{% assign tab_label = tab_content.last | split: '&lt;/tab-content-label&gt;' | first %}</span>
+
+<span class="comment">&lt;!-- Now tab_label = "Reviews" and can be used to build navigation --&gt;</span></div>
+
+      <div class="highlight-box">
+        <strong>Why custom elements?</strong> They're valid HTML (browsers won't error), they have clear open/close tags for string splitting, and they're self-documenting. Using <code>data-*</code> attributes would work too but requires more complex regex-like splitting in Liquid.
+      </div>
+    </div>
+
+    <div class="connector"><div class="arrow-down green"></div></div>
+
+    <div class="node liquid">
+      <span class="node-tag liquid">Liquid Technique</span>
+      <h3>Pattern 3: Style Extraction &amp; Consolidation</h3>
+      <p>The <code>_layout.merge_styles</code> snippet demonstrates another variable hack: extracting all <code>&lt;style&gt;</code> tags from individually rendered sections and consolidating them into a single block. This prevents duplicate CSS and reduces render-blocking resources.</p>
+
+      <div class="code-block"><span class="comment">&lt;!-- Simplified pattern from theme.liquid modal rendering --&gt;</span>
+
+<span class="liquid">{% assign content = content | replace: '&lt;style&gt;&lt;/style&gt;', '' | append: " " %}</span>
+<span class="liquid">{% assign content_array = content | split: "&lt;/style&gt;" %}</span>
+<span class="liquid">{% assign styles_content = '' %}</span>
+<span class="liquid">{% assign content = '' %}</span>
+
+<span class="liquid">{% for split in content_array %}</span>
+  <span class="liquid">{% if forloop.last %}</span>
+    <span class="liquid">{% assign content = content | append: split %}</span>
+    <span class="liquid">{% break %}</span>
+  <span class="liquid">{% endif %}</span>
+  <span class="liquid">{% assign splits = split | split: "&lt;style" %}</span>
+  <span class="liquid">{% assign content = content | append: splits.first %}</span>
+  <span class="liquid">{% assign styles_content = styles_content | append: splits.last %}</span>
+<span class="liquid">{% endfor %}</span>
+
+<span class="comment">&lt;!-- Output: one &lt;style&gt; block + style-free HTML --&gt;</span>
+<span class="tag">&lt;style&gt;</span><span class="liquid">{{ styles_content | strip_newlines }}</span><span class="tag">&lt;/style&gt;</span>
+<span class="liquid">{{ content }}</span></div>
+    </div>
+
+    <div class="connector"><div class="arrow-down green"></div></div>
+
+    <div class="node css">
+      <span class="node-tag css">Reasoning</span>
+      <h3>Why This Works (and When It Doesn't)</h3>
+      <p>Liquid variable hacking is powerful but has real limitations.</p>
+
+      <div class="side-by-side">
+        <div>
+          <span class="side-label" style="color: var(--accent-green);">Works well for</span>
+          <div class="code-block" style="font-family: inherit; white-space: normal; line-height: 1.8; font-size: 13px;">
+&bull; Server-rendered composition (tabs, style merging)<br>
+&bull; Extracting metadata from sections (labels, groups)<br>
+&bull; Conditional layout based on section content<br>
+&bull; Reducing duplicate CSS across sections<br>
+&bull; Any transformation that only needs the HTML string</div>
+        </div>
+        <div>
+          <span class="side-label" style="color: var(--accent-red);">Breaks down when</span>
+          <div class="code-block" style="font-family: inherit; white-space: normal; line-height: 1.8; font-size: 13px;">
+&bull; Sections render asynchronously (they don't in Liquid, but app blocks can)<br>
+&bull; The marker tag content contains the same delimiter used for splitting<br>
+&bull; You need to pass complex data (nested JSON) &mdash; string splitting gets brittle<br>
+&bull; Theme Editor needs to reflect changes instantly (requires full re-render)<br>
+&bull; Performance: O(n) string ops on large section group HTML</div>
+        </div>
+      </div>
+
+      <div class="highlight-box tip">
+        <strong>Rule of thumb:</strong> If you need server-side cross-section coordination, use the capture &rarr; process &rarr; output pattern. If you need client-side coordination, use Alpine stores. Don't try to do client-side work in Liquid or server-side work in JavaScript.
+      </div>
+    </div>
+
+
+    <!-- ============================================================ -->
+    <!--  FOOTER / NAVIGATION                                         -->
+    <!-- ============================================================ -->
+
+    <div class="divider"></div>
+
+    <div style="text-align: center;">
+      <a href="adding-a-block-flowchart.html" class="nav-link">&#8592; Adding a Block to Cards</a>
+      <a href="product-card-rendering-flowchart.html" class="nav-link">Product Card Rendering &#8594;</a>
+    </div>
+
+    <footer>
+      <p>Accelerate-Z Training &mdash; Page Transitions, Render Tabs &amp; Liquid Variable Hacking</p>
+    </footer>
+
+  </div>
+</body>
+</html>
