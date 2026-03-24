@@ -20,6 +20,10 @@ How product JSON data is sourced and loaded via a three-tier cascade. Covers ser
 
 SPA-like page transitions using Barba.js. Covers the layout wrapper structure, theme settings configuration, initialization flow, the 6 navigation lifecycle hooks, and route exclusions.
 
+### [Theme Editor Integration & Building for Customization](https://framework-labs-d2c.github.io/platter-training/theme-editor-integration-flowchart.html)
+
+How the Shopify Theme Editor works under the hood and how to build features that are fully customizable inside it. Covers the iframe architecture, design mode detection, the six editor events, schema-to-UI mapping, block select & tab focus, design-mode branching patterns, live updates vs re-renders, and testing.
+
 ### [How to Add a Block to Product Cards — Testimonial Block Example](https://framework-labs-d2c.github.io/platter-training/adding-a-block-flowchart.html)
 
 Step-by-step guide for adding a new block to product cards, using a testimonial block as an example. Covers schema definition, Liquid rendering, CSS styling, JavaScript hydration, and dynamic card support.
