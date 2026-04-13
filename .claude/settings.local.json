@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:/development/FWL/accelerate-z -type f \\\\\\(-name *tabs* -o -name *tab* \\\\\\))"
+    ]
+  }
+}
