@@ -291,7 +291,7 @@ Each recommendation carries: **What**, **Why**, **Effort** (S/M/L/XL), **Tradeof
   - Centralized token + component updates
   - "Override color" workflow for each client
   - Clean separation: library = code-shape, client files = merchandising choices
-- **Tradeoff:** Requires org-level Figma plan + team discipline. Biggest payoff for Felix's 60-80-client fleet model.
+- **Tradeoff:** Requires org-level Figma plan + team discipline.
 
 #### 3.2 Code Connect mapping — **L**
 - **What:** Use Figma's Code Connect feature (already available via the MCP server) to annotate each canonical component with its production Liquid section/block name. E.g., `Product Card` → `_card_product_card__*` blocks; `Slideshow` → `slideshow.liquid`.
@@ -318,7 +318,7 @@ Each recommendation carries: **What**, **Why**, **Effort** (S/M/L/XL), **Tradeof
 - **Tradeoff:** Must stay in sync with code. Consider auto-generating these from a single source of truth.
 
 #### 3.5 Token doc page with mobile/tablet/desktop columns — **M**
-- **What:** On the Typography page (Tier 2 split), lay out each class in 3 columns: `<768px`, `768-1200px`, `>1200px`. Today, only Desktop is visible in vars; mobile comes from frame-height derivation. Middle breakpoint (1200-768px) exists in Figma but code only uses `@media (max-width: 768px)` — either collapse Figma to match or add the middle breakpoint in code (decision point for Felix).
+- **What:** On the Typography page (Tier 2 split), lay out each class in 3 columns: `<768px`, `768-1200px`, `>1200px`. Today, only Desktop is visible in vars; mobile comes from frame-height derivation. Middle breakpoint (1200-768px) exists in Figma but code only uses `@media (max-width: 768px)` — either collapse Figma to match or add the middle breakpoint in code (decision point).
 - **Why:** Walkthrough IMPORTANT note 1.2: "Middle breakpoint (1200-768px) exists in Figma but production only uses a single `@media (max-width: 768px)`. The tablet breakpoint from Figma is unused."
 
 #### 3.6 Build missing modal designs — **L**
@@ -359,7 +359,7 @@ Each recommendation carries: **What**, **Why**, **Effort** (S/M/L/XL), **Tradeof
 
 ---
 
-## 3. Recommended Sequencing (for Felix)
+## 3. Recommended Sequencing
 
 Given that the repo is the platform for 60-80 clients and the Figma file is the source for design decisions:
 
@@ -422,7 +422,7 @@ These came up during the analysis but are **NOT recommended**:
 
 ---
 
-## 6. Open questions for Felix
+## 6. Open questions 
 
 1. **Is the secondary font slot (`--typography-family-secondary`) actually used in production, or a dead code path?** If dead, drop from code instead of adding to Figma.
 2. **Does the tablet breakpoint (1200-768px) belong in the system?** Figma has it; code doesn't. Pick one.
