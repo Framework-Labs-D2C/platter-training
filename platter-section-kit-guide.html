@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platter Section Kit — Team Guide · The Vitamin Shoppe</title>
+<meta name="description" content="How to use the Platter reusable landing-page section kit for The Vitamin Shoppe: the three sections, how to add them to a landing page, and a full field reference.">
+</head>
+<body>
+<style>
+  :root{
+    --navy:#0a2540; --navy-2:#0c2c4d; --blue:#0f6cbd; --blue-700:#0a4f8c;
+    --accent:#ff5c35; --ink:#1b2a3a; --paper:#ffffff; --mist:#eef3fa;
+    --line:#dce6f1; --muted:#586b82; --save:#127a45;
+    --card:#ffffff; --bg:#f4f7fb; --code-bg:#0d2947; --code-ink:#d7e6f7;
+    --shadow:0 24px 50px -34px rgba(10,37,64,.5);
+    --font:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ink:#e8eef6; --paper:#0f2947; --mist:#13315a; --line:#22456b; --muted:#9db4d0;
+      --card:#102b4c; --bg:#081a30; --shadow:0 24px 50px -30px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#e8eef6; --paper:#0f2947; --mist:#13315a; --line:#22456b; --muted:#9db4d0;
+    --card:#102b4c; --bg:#081a30; --shadow:0 24px 50px -30px rgba(0,0,0,.7);
+  }
+  :root[data-theme="light"]{
+    --ink:#1b2a3a; --paper:#ffffff; --mist:#eef3fa; --line:#dce6f1; --muted:#586b82;
+    --card:#ffffff; --bg:#f4f7fb; --shadow:0 24px 50px -34px rgba(10,37,64,.5);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);
+    line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:var(--blue);}
+  ::selection{background:rgba(255,92,53,.28);}
+
+  /* ---------- hero ---------- */
+  .pg-hero{position:relative;overflow:hidden;color:#eaf2fb;
+    background:linear-gradient(160deg,#0a2540 0%,#0c2c4d 55%,#0f3f6f 130%);
+    padding:clamp(2.5rem,6vw,5rem) clamp(1.25rem,5vw,4rem) clamp(3rem,7vw,5.5rem);}
+  .pg-hero::after{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.11) 1px,transparent 1px);background-size:5px 5px;}
+  .pg-hero__glow{position:absolute;right:-8%;top:-30%;width:52%;aspect-ratio:1;border-radius:50%;z-index:0;
+    background:radial-gradient(circle,rgba(255,92,53,.42),rgba(255,92,53,0) 62%);filter:blur(10px);}
+  .pg-hero__inner{position:relative;z-index:2;max-width:1080px;margin:0 auto;}
+  .pg-lockup{display:flex;align-items:center;gap:.7rem;margin-bottom:clamp(1.5rem,4vw,2.5rem);}
+  .pg-mark{width:38px;height:38px;border-radius:9px;background:linear-gradient(160deg,#0f6cbd,#0a2b5e);
+    display:grid;place-items:center;font-weight:900;font-size:1.35rem;color:#fff;flex:none;
+    box-shadow:0 8px 20px -8px rgba(0,0,0,.6);}
+  .pg-lockup b{font-weight:800;letter-spacing:.02em;font-size:.98rem;line-height:1;color:#fff;}
+  .pg-lockup small{display:block;font-size:.6rem;letter-spacing:.22em;color:#9db8d8;font-weight:700;margin-top:.2rem;}
+  .pg-lockup .pg-x{color:#7fa8d4;font-weight:400;margin:0 .1rem;}
+  .pg-eyebrow{font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#7fb2e6;
+    display:inline-flex;align-items:center;gap:.6rem;margin:0 0 1rem;}
+  .pg-eyebrow::before{content:"";width:26px;height:2px;background:var(--accent);}
+  .pg-hero h1{margin:0 0 1rem;font-size:clamp(2.1rem,5.2vw,3.5rem);line-height:1.04;letter-spacing:-.02em;
+    font-weight:800;color:#fff;max-width:16ch;text-wrap:balance;}
+  .pg-hero p{margin:0;max-width:56ch;font-size:clamp(1.02rem,1.5vw,1.18rem);color:#c5d7ec;line-height:1.62;}
+  .pg-hero__meta{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.8rem;}
+  .pg-tag{font-size:.76rem;font-weight:700;letter-spacing:.02em;padding:.42rem .8rem;border-radius:999px;
+    background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);color:#dbe8f6;}
+  .pg-tag b{color:#fff;}
+
+  /* ---------- layout ---------- */
+  .pg-main{max-width:1080px;margin:0 auto;padding:clamp(2rem,5vw,3.5rem) clamp(1.25rem,5vw,4rem) 4rem;}
+  .pg-toc{position:relative;margin:-2.6rem auto clamp(2.5rem,5vw,4rem);max-width:1080px;
+    padding:0 clamp(1.25rem,5vw,4rem);z-index:5;}
+  .pg-toc__card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);
+    padding:1.1rem 1.25rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.35rem .5rem;}
+  .pg-toc a{display:flex;align-items:center;gap:.6rem;text-decoration:none;color:var(--ink);font-weight:600;
+    font-size:.9rem;padding:.5rem .6rem;border-radius:10px;transition:background .15s,color .15s;}
+  .pg-toc a:hover{background:var(--mist);color:var(--blue-700);}
+  .pg-toc a span{width:1.6rem;height:1.6rem;flex:none;border-radius:7px;background:var(--navy);color:#fff;
+    font-size:.78rem;font-weight:800;display:grid;place-items:center;}
+
+  section.pg-sec{margin:0 0 clamp(2.5rem,5vw,3.75rem);scroll-margin-top:1.5rem;}
+  .pg-sec__head{display:flex;align-items:baseline;gap:.85rem;margin:0 0 1.15rem;padding-bottom:.7rem;
+    border-bottom:2px solid var(--line);}
+  .pg-num{font-size:.82rem;font-weight:800;color:#fff;background:var(--accent);border-radius:7px;
+    padding:.2rem .55rem;flex:none;letter-spacing:.02em;}
+  .pg-sec__head h2{margin:0;font-size:clamp(1.4rem,2.6vw,1.9rem);letter-spacing:-.01em;font-weight:800;color:var(--ink);}
+  .pg-sec p{color:var(--ink);}
+  .pg-sec p.lead{font-size:1.05rem;color:var(--muted);}
+  .pg-sec strong{color:var(--ink);font-weight:700;}
+
+  .pg-callout{background:var(--mist);border-left:3px solid var(--blue);border-radius:0 12px 12px 0;
+    padding:.9rem 1.15rem;margin:1.15rem 0;font-size:.94rem;}
+  .pg-callout--accent{border-left-color:var(--accent);}
+  .pg-callout b{color:var(--blue-700);}
+
+  code{font-family:'SF Mono',ui-monospace,'Cascadia Code','Consolas',monospace;font-size:.86em;
+    background:var(--mist);color:var(--blue-700);padding:.12em .42em;border-radius:6px;font-weight:600;}
+  @media (prefers-color-scheme:dark){code{color:#8fc4f5;}}
+  :root[data-theme="dark"] code{color:#8fc4f5;}
+
+  /* ---------- section cards (the 3 components) ---------- */
+  .pg-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.1rem;margin-top:1.25rem;}
+  .pg-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    box-shadow:var(--shadow);display:flex;flex-direction:column;}
+  .pg-card__prev{height:132px;position:relative;overflow:hidden;display:grid;place-items:center;padding:1rem;}
+  .pg-card__body{padding:1.05rem 1.15rem 1.25rem;}
+  .pg-card__kick{font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 .35rem;}
+  .pg-card__body h3{margin:0 0 .4rem;font-size:1.08rem;font-weight:800;color:var(--ink);}
+  .pg-card__body p{margin:0;font-size:.9rem;color:var(--muted);line-height:1.5;}
+  .pg-card__type{display:inline-block;margin-top:.7rem;font-size:.72rem;font-weight:700;color:var(--blue-700);
+    background:var(--mist);padding:.28rem .6rem;border-radius:7px;}
+
+  /* mini preview flourishes */
+  .prev-banner{background:radial-gradient(120% 140% at 100% 0%,#eaf2fb,#fff);}
+  .prev-banner .chip{background:linear-gradient(150deg,#0a2540,#123a63);border-radius:10px;width:74px;height:88px;
+    display:grid;place-items:center;box-shadow:0 10px 20px -10px rgba(10,37,64,.6);}
+  .prev-banner .chip::after{content:"";width:34px;height:52px;border-radius:5px;background:linear-gradient(#dfe9f5,#c6d6ea);}
+  .prev-banner .txt{display:grid;gap:5px;margin-left:14px;}
+  .prev-banner .txt i{display:block;height:7px;border-radius:4px;background:#c9d8ea;}
+  .prev-banner .row{display:flex;align-items:center;}
+  .prev-atc{background:linear-gradient(180deg,#fff,#f2f7fc);}
+  .prev-atc .pod{width:56px;height:74px;border-radius:9px;background:linear-gradient(160deg,#12233b,#20375a);}
+  .prev-atc .stars{color:#f4b740;font-size:12px;letter-spacing:1px;}
+  .prev-atc .btn{height:16px;border-radius:6px;background:linear-gradient(180deg,#0f6cbd,#0a4f8c);}
+  .prev-atc .col{margin-left:12px;display:grid;gap:5px;min-width:96px;}
+  .prev-atc .col i{height:7px;border-radius:4px;background:#c9d8ea;}
+  .prev-bundle{background:linear-gradient(180deg,#0a2540,#0c2c4d);}
+  .prev-bundle .stack{display:flex;gap:7px;}
+  .prev-bundle .it{width:40px;height:52px;border-radius:8px;background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.16);display:grid;place-items:center;}
+  .prev-bundle .it::after{content:"";width:20px;height:28px;border-radius:4px;background:#e7f0fa;}
+  .prev-bundle .plus{color:#ff5c35;font-weight:800;align-self:center;}
+
+  /* ---------- steps ---------- */
+  ol.pg-steps{counter-reset:step;list-style:none;margin:1.25rem 0 0;padding:0;display:grid;gap:.7rem;}
+  ol.pg-steps li{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:.9rem 1.15rem .9rem 3.4rem;font-size:.95rem;}
+  ol.pg-steps li::before{counter-increment:step;content:counter(step);position:absolute;left:.9rem;top:.85rem;
+    width:1.7rem;height:1.7rem;border-radius:50%;background:var(--navy);color:#fff;font-size:.82rem;font-weight:800;
+    display:grid;place-items:center;}
+  ol.pg-steps li b{color:var(--blue-700);}
+
+  /* ---------- tables ---------- */
+  .pg-tablewrap{overflow-x:auto;margin-top:1.1rem;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+  table.pg-fields{width:100%;border-collapse:collapse;font-size:.88rem;min-width:640px;background:var(--card);}
+  table.pg-fields th{text-align:left;background:var(--navy);color:#dbe8f6;font-weight:700;font-size:.74rem;
+    letter-spacing:.06em;text-transform:uppercase;padding:.7rem .9rem;position:sticky;top:0;}
+  table.pg-fields td{padding:.7rem .9rem;border-top:1px solid var(--line);vertical-align:top;}
+  table.pg-fields tr:nth-child(even) td{background:var(--mist);}
+  table.pg-fields td:first-child{white-space:nowrap;}
+  .pg-req{display:inline-block;font-size:.64rem;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--accent);
+    border-radius:5px;padding:.1rem .38rem;margin-left:.4rem;vertical-align:middle;text-transform:uppercase;}
+  .pg-opt{color:var(--muted);font-weight:600;}
+  table.pg-fields code{background:transparent;padding:0;color:var(--blue-700);}
+  @media (prefers-color-scheme:dark){table.pg-fields code{color:#8fc4f5;}}
+  :root[data-theme="dark"] table.pg-fields code{color:#8fc4f5;}
+
+  /* ---------- do / don't ---------- */
+  .pg-dd{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-top:1.25rem;}
+  .pg-dd__col{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.15rem 1.3rem;box-shadow:var(--shadow);}
+  .pg-dd__col h4{margin:0 0 .8rem;font-size:.95rem;display:flex;align-items:center;gap:.5rem;font-weight:800;}
+  .pg-dd--do h4{color:var(--save);} .pg-dd--dont h4{color:#c8102e;}
+  .pg-dd ul{margin:0;padding:0;list-style:none;display:grid;gap:.6rem;}
+  .pg-dd li{position:relative;padding-left:1.5rem;font-size:.9rem;line-height:1.5;}
+  .pg-dd li::before{position:absolute;left:0;top:-.05rem;font-weight:800;}
+  .pg-dd--do li::before{content:"✓";color:var(--save);}
+  .pg-dd--dont li::before{content:"✕";color:#c8102e;}
+
+  /* ---------- where-it-lives grid ---------- */
+  .pg-loc{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.9rem;margin-top:1.25rem;}
+  .pg-loc__item{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:1rem 1.1rem;}
+  .pg-loc__item h4{margin:0 0 .35rem;font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);font-weight:800;}
+  .pg-loc__item p{margin:0;font-size:.88rem;color:var(--muted);line-height:1.5;}
+  .pg-loc__item code{font-size:.8em;}
+
+  /* ---------- footer ---------- */
+  .pg-foot{background:linear-gradient(160deg,#0a2540,#0c2c4d);color:#c5d7ec;
+    padding:clamp(2rem,5vw,3rem) clamp(1.25rem,5vw,4rem);}
+  .pg-foot__inner{max-width:1080px;margin:0 auto;}
+  .pg-foot h3{margin:0 0 1.1rem;color:#fff;font-size:1.1rem;font-weight:800;}
+  .pg-links{display:grid;gap:.7rem;}
+  .pg-links a{display:flex;align-items:center;gap:.7rem;color:#dbe8f6;text-decoration:none;font-weight:600;
+    font-size:.92rem;padding:.7rem .9rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13);
+    border-radius:11px;transition:background .15s,border-color .15s;word-break:break-all;}
+  .pg-links a:hover{background:rgba(255,255,255,.11);border-color:rgba(127,178,230,.5);}
+  .pg-links .k{font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7fb2e6;flex:none;
+    width:6.5rem;}
+  .pg-foot__note{margin-top:1.6rem;padding-top:1.2rem;border-top:1px solid rgba(255,255,255,.14);
+    font-size:.78rem;color:#8ba5c4;}
+
+  .pg-theme{position:fixed;right:1rem;top:1rem;z-index:20;background:rgba(255,255,255,.12);color:#fff;
+    border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:.45rem .9rem;font:inherit;font-size:.8rem;
+    font-weight:700;cursor:pointer;backdrop-filter:blur(6px);}
+  .pg-theme:hover{background:rgba(255,255,255,.22);}
+
+  @media (max-width:680px){
+    .pg-dd{grid-template-columns:1fr;}
+    .pg-links .k{width:auto;}
+  }
+
+  /* ---------- print ---------- */
+  @media print{
+    :root{--bg:#fff;--card:#fff;--shadow:none;--mist:#f3f6fa;}
+    body{color:#111;}
+    .pg-theme{display:none;}
+    .pg-hero,.pg-foot{background:#0a2540 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .pg-hero__glow{display:none;}
+    a{color:#0a4f8c;text-decoration:none;}
+    section.pg-sec{break-inside:avoid;}
+    .pg-card,.pg-loc__item,ol.pg-steps li,.pg-dd__col,.pg-tablewrap{break-inside:avoid;box-shadow:none;}
+    table.pg-fields th{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .pg-toc{display:none;}
+  }
+</style>
+
+<button class="pg-theme" onclick="(function(r){var n=r.getAttribute('data-theme')==='dark'?'light':'dark';r.setAttribute('data-theme',n);this.textContent=n==='dark'?'☀ Light':'☾ Dark';}).call(this,document.documentElement)">☾ Dark / ☀ Light</button>
+
+<header class="pg-hero">
+  <div class="pg-hero__glow"></div>
+  <div class="pg-hero__inner">
+    <div class="pg-lockup">
+      <span class="pg-mark">P</span>
+      <span><b>Platter <span class="pg-x">×</span> The Vitamin Shoppe</b><small>REUSABLE SECTION KIT</small></span>
+    </div>
+    <p class="pg-eyebrow">Team Guide · Phase 1</p>
+    <h1>The Platter Section Kit</h1>
+    <p>A small kit of reusable, merchandisable landing-page sections. Authors drop them into a
+      Vitamin Shoppe landing page from the CMS, fill in a short form, and publish. No code required per page.</p>
+    <div class="pg-hero__meta">
+      <span class="pg-tag"><b>3</b> sections</span>
+      <span class="pg-tag">AlpineJS + scoped CSS</span>
+      <span class="pg-tag">Live cart via <b>TVS-Common</b></span>
+      <span class="pg-tag">Amplience CMS</span>
+    </div>
+  </div>
+</header>
+
+<nav class="pg-toc" aria-label="Contents">
+  <div class="pg-toc__card">
+    <a href="#what"><span>1</span> What the kit is</a>
+    <a href="#sections"><span>2</span> The three sections</a>
+    <a href="#add"><span>3</span> Add a section</a>
+    <a href="#fields"><span>4</span> Field reference</a>
+    <a href="#lives"><span>5</span> Where it lives</a>
+    <a href="#sku"><span>6</span> Finding a SKU</a>
+    <a href="#dodont"><span>7</span> Do &amp; don't</a>
+    <a href="#links"><span>8</span> Links</a>
+  </div>
+</nav>
+
+<main class="pg-main">
+
+  <!-- 1 -->
+  <section class="pg-sec" id="what">
+    <div class="pg-sec__head"><span class="pg-num">01</span><h2>What the kit is</h2></div>
+    <p class="lead">Reusable content blocks that slot into the body of a Vitamin Shoppe landing page,
+      between the existing site header and footer (which the kit never touches).</p>
+    <p>Each section is a small self-contained component built to the TVS front-end standard: <strong>HTML +
+      AlpineJS + a scoped <code>&lt;style&gt;</code> block</strong>, using the Lato brand font and no Tailwind.
+      The product sections talk to <strong>TVS-Common</strong> (the site's shared micro-front-end,
+      <code>window._vsiMicroFE</code>) to fetch live product data and add items to the real cart.</p>
+    <div class="pg-callout">
+      <b>How a page is built:</b> a landing page is a <code>ct-landing-page</code> content item that holds a
+      <code>sections[]</code> list. Each entry in that list is one kit component (an Image Banner, a Product,
+      or a Bundle). You order them top-to-bottom, fill each one's form, then publish the page. The URL is
+      <code>/lp/&lt;deliveryKey&gt;</code>.
+    </div>
+    <p>Because the data (what an author types) is stored separately from the template (the look), a marketer
+      can build and re-arrange a whole page without a developer, and the same section can be reused across
+      many pages with different content.</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="pg-sec" id="sections">
+    <div class="pg-sec__head"><span class="pg-num">02</span><h2>The three sections</h2></div>
+    <p class="lead">One is a storytelling banner; two are product-driven with a live add-to-cart.</p>
+    <div class="pg-cards">
+      <article class="pg-card">
+        <div class="pg-card__prev prev-banner"><div class="row"><div class="chip"></div>
+          <div class="txt"><i style="width:70px"></i><i style="width:96px"></i><i style="width:54px;background:#ff5c35;opacity:.7"></i></div></div></div>
+        <div class="pg-card__body">
+          <p class="pg-card__kick">Storytelling</p>
+          <h3>Image Banner</h3>
+          <p>A merchandisable image-left/right banner: eyebrow, heading, rich-text body, up to two buttons, an
+            optional image chip and Platter badge.</p>
+          <span class="pg-card__type">ct-image-banner</span>
+        </div>
+      </article>
+      <article class="pg-card">
+        <div class="pg-card__prev prev-atc"><div class="row"><div class="pod"></div>
+          <div class="col"><i style="width:60px"></i><span class="stars">★★★★★</span><i style="width:80px;background:#0a2540;height:11px"></i><div class="btn" style="width:96px"></div></div></div></div>
+        <div class="pg-card__body">
+          <p class="pg-card__kick">Single product</p>
+          <h3>Product · Add to Cart</h3>
+          <p>One product by SKU. Name, image, price, rating and Auto Delivery price are fetched live; a
+            quantity stepper and a working Add to Cart button add it to the real cart.</p>
+          <span class="pg-card__type">ct-product-atc</span>
+        </div>
+      </article>
+      <article class="pg-card">
+        <div class="pg-card__prev prev-bundle"><div class="stack"><div class="it"></div><span class="plus">+</span><div class="it"></div><span class="plus">+</span><div class="it"></div></div></div>
+        <div class="pg-card__body">
+          <p class="pg-card__kick">Multi-product</p>
+          <h3>Product Bundle</h3>
+          <p>A "build the stack" bundle of 2–6 SKUs with live pricing, per-item include toggles, a display
+            discount, and one-click add-all (added to the cart one item at a time).</p>
+          <span class="pg-card__type">ct-product-bundle</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="pg-sec" id="add">
+    <div class="pg-sec__head"><span class="pg-num">03</span><h2>How to add a section to a landing page</h2></div>
+    <p class="lead">For content authors, no code needed. In Amplience:</p>
+    <ol class="pg-steps">
+      <li>Go to <b>Content</b> and open (or create) a <b>Landing Page</b> in the
+        <code>Web - LP Pages / Platter</code> folder.</li>
+      <li>In the page's <b>Sections</b> list, click <b>+ Add</b>, then <b>+ Create new content</b>.</li>
+      <li>Pick the component type you want: <b>Image Banner</b>, <b>Product (Add to Cart)</b>, or
+        <b>Product Bundle</b>.</li>
+      <li>Fill in the form fields (see the <a href="#fields">field reference</a> below). Required fields are
+        marked in the form.</li>
+      <li>Click <b>Save</b> and give the item a clear name (e.g. <code>LP Prime — Hero Banner</code>) so it's
+        easy to find later.</li>
+      <li>Repeat for each section, and drag them into the order you want them to appear on the page.</li>
+      <li><b>Save</b> the landing page.</li>
+      <li><b>Publish</b> the page, and choose to <b>publish linked dependencies</b> so the sections go live too.</li>
+      <li>Request a <b>Fastly cache flush</b> for the page path (or wait for the cache to expire).</li>
+      <li>View it at <code>/lp/&lt;deliveryKey&gt;</code> on the site.</li>
+    </ol>
+    <div class="pg-callout pg-callout--accent">
+      <b>Tip:</b> for the two product sections you only enter a <b>SKU</b> (and options). The product name,
+      photo, price and rating are pulled in automatically when the page loads, so they stay correct even if
+      the catalog changes.
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="pg-sec" id="fields">
+    <div class="pg-sec__head"><span class="pg-num">04</span><h2>Field reference — what is set where</h2></div>
+    <p class="lead">Every field on each section's form, what it controls, and an example.</p>
+
+    <h3 style="margin:1.6rem 0 0;font-size:1.05rem;color:var(--accent)">Image Banner</h3>
+    <div class="pg-tablewrap">
+      <table class="pg-fields">
+        <thead><tr><th>Field</th><th>Controls</th><th>Req?</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>imageSide</code></td><td>Which side the image sits on (text takes the other side).</td><td class="pg-opt">left / right · default left</td><td><code>left</code></td></tr>
+          <tr><td><code>image</code><span class="pg-req">Req</span></td><td>Full image URL (Scene7/DAM or any hosted image).</td><td>Required</td><td><code>https://s7d2.scene7.com/.../2689446_set?wid=900&amp;fmt=png-alpha</code></td></tr>
+          <tr><td><code>imageAlt</code></td><td>Accessible description of the image (ADA). Falls back to the heading.</td><td class="pg-opt">Optional</td><td><code>German Creatine, unflavored 60-serving tub</code></td></tr>
+          <tr><td><code>eyebrow</code></td><td>Small label above the heading.</td><td class="pg-opt">Optional</td><td><code>Crafted by Platter × The Vitamin Shoppe</code></td></tr>
+          <tr><td><code>heading</code><span class="pg-req">Req</span></td><td>Main headline (real text, for SEO).</td><td>Required</td><td><code>German Creatine, engineered for the everyday athlete.</code></td></tr>
+          <tr><td><code>body</code></td><td>Supporting copy. Basic HTML allowed (<code>&lt;p&gt;</code>, <code>&lt;strong&gt;</code>).</td><td class="pg-opt">Optional</td><td><code>&lt;p&gt;Pure Creapure® — &lt;strong&gt;5g&lt;/strong&gt;…&lt;/p&gt;</code></td></tr>
+          <tr><td><code>chip</code></td><td>Small badge over the image.</td><td class="pg-opt">Optional</td><td><code>Creapure® verified</code></td></tr>
+          <tr><td><code>ctaLabel</code> / <code>ctaHref</code></td><td>Primary button label and link.</td><td class="pg-opt">Optional</td><td><code>Shop German Creatine</code> → <code>/p/…/vs-8531</code></td></tr>
+          <tr><td><code>cta2Label</code> / <code>cta2Href</code></td><td>Optional second (outline) button.</td><td class="pg-opt">Optional</td><td><code>Learn the science</code> → <code>#</code></td></tr>
+          <tr><td><code>badge</code></td><td>Small "built by Platter" note under the content. Empty = hidden.</td><td class="pg-opt">Optional</td><td><code>Built with the Platter section kit</code></td></tr>
+          <tr><td><code>showGlow</code></td><td>Toggles the animated glow behind the image.</td><td class="pg-opt">true / false · default true</td><td><code>true</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:1.8rem 0 0;font-size:1.05rem;color:var(--accent)">Product · Add to Cart</h3>
+    <div class="pg-tablewrap">
+      <table class="pg-fields">
+        <thead><tr><th>Field</th><th>Controls</th><th>Req?</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>sku</code><span class="pg-req">Req</span></td><td>TVS SKU id. Product details are fetched live.</td><td>Required</td><td><code>VS-8531</code></td></tr>
+          <tr><td><code>quantity</code></td><td>Default quantity shown in the stepper (1–99).</td><td class="pg-opt">default 1</td><td><code>1</code></td></tr>
+          <tr><td><code>deliveryMethod</code></td><td>Fulfilment method sent to the cart.</td><td class="pg-opt">DTC / BOPUS · default DTC</td><td><code>DTC</code></td></tr>
+          <tr><td><code>showAutoDelivery</code></td><td>Show the "or $X with Auto Delivery" price line.</td><td class="pg-opt">true / false · default true</td><td><code>true</code></td></tr>
+          <tr><td><code>kicker</code></td><td>Small label above the card.</td><td class="pg-opt">Optional</td><td><code>Featured product · add to cart</code></td></tr>
+          <tr><td><code>heading</code></td><td>Override the product name shown as the heading. Empty = live name.</td><td class="pg-opt">Optional</td><td><em>(leave empty)</em></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:1.8rem 0 0;font-size:1.05rem;color:var(--accent)">Product Bundle</h3>
+    <div class="pg-tablewrap">
+      <table class="pg-fields">
+        <thead><tr><th>Field</th><th>Controls</th><th>Req?</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>kicker</code></td><td>Small label above the title.</td><td class="pg-opt">Optional</td><td><code>Bundle &amp; save</code></td></tr>
+          <tr><td><code>title</code><span class="pg-req">Req</span></td><td>Bundle headline.</td><td>Required</td><td><code>The Creatine Stack</code></td></tr>
+          <tr><td><code>subtitle</code></td><td>Supporting line under the title.</td><td class="pg-opt">Optional</td><td><code>Bundle three performance staples and save.</code></td></tr>
+          <tr><td><code>skus</code><span class="pg-req">Req</span></td><td>2–6 TVS SKU ids. Each becomes a toggleable item.</td><td>Required</td><td><code>["VS-8531","VS-8532","VS-6027"]</code></td></tr>
+          <tr><td><code>bundleDiscount</code></td><td>Percent off shown when 2+ items are selected (display only in Phase 1).</td><td class="pg-opt">0–50 · default 10</td><td><code>10</code></td></tr>
+          <tr><td><code>deliveryMethod</code></td><td>Fulfilment method sent to the cart.</td><td class="pg-opt">DTC / BOPUS · default DTC</td><td><code>DTC</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pg-callout">
+      <b>Note on the bundle discount:</b> in Phase 1 the percentage is a display value on the page. Real
+      promotions and pricing are applied by the cart at checkout.
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="pg-sec" id="lives">
+    <div class="pg-sec__head"><span class="pg-num">05</span><h2>Where the pieces live (for developers)</h2></div>
+    <div class="pg-loc">
+      <div class="pg-loc__item"><h4>Templates (the view)</h4><p>Published to the Content Hub at
+        <code>cdn.c1.amplience.net/c/vitaminshopdev/Platter*</code> — <code>PlatterImageBanner</code>,
+        <code>PlatterProductATC</code>, <code>PlatterProductBundle</code>.</p></div>
+      <div class="pg-loc__item"><h4>Schemas</h4><p>Development → <b>Content type schemas</b>:
+        <code>cs-image-banner</code>, <code>cs-product-atc</code>, <code>cs-product-bundle</code>.</p></div>
+      <div class="pg-loc__item"><h4>Content types</h4><p>Development → <b>Content types</b>: the
+        <code>ct-*</code> registrations that turn each schema into an authorable component.</p></div>
+      <div class="pg-loc__item"><h4>Sections allow-list</h4><p>The <code>cs-landing-page</code> schema's
+        <b>sections</b> enum lists which components may be added to a landing page.</p></div>
+      <div class="pg-loc__item"><h4>Delivery &amp; route</h4><p>A page's <b>delivery key</b> maps to the
+        <code>/lp/&lt;key&gt;</code> route. Publish, then request a <b>Fastly flush</b> for it to appear.</p></div>
+      <div class="pg-loc__item"><h4>Source of truth</h4><p>Section code lives in <code>/sections/*.html</code>
+        in the repo; <code>node build.js</code> produces the upload-ready templates in
+        <code>/dist/templates/</code>.</p></div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="pg-sec" id="sku">
+    <div class="pg-sec__head"><span class="pg-num">06</span><h2>Finding a SKU</h2></div>
+    <p>Open the product's PDP (product detail page). The SKU is the last part of the URL — use it in
+      <strong>uppercase</strong>.</p>
+    <div class="pg-callout pg-callout--accent" style="font-size:1rem">
+      <code style="font-size:.9em">…/p/german-creatine-unflavored-11-1-oz-powder/<b style="color:var(--accent)">vs-8531</b></code>
+      &nbsp;→&nbsp; SKU is <code style="font-size:.95em">VS-8531</code>
+    </div>
+    <p style="color:var(--muted);font-size:.92rem">SKUs follow the pattern <code>letters-alphanumerics</code>,
+      e.g. <code>VS-8531</code>, <code>ANP-14589</code>. If a SKU isn't found, that item is quietly skipped and
+      the rest of the section still renders.</p>
+  </section>
+
+  <!-- 7 -->
+  <section class="pg-sec" id="dodont">
+    <div class="pg-sec__head"><span class="pg-num">07</span><h2>Do &amp; don't</h2></div>
+    <div class="pg-dd">
+      <div class="pg-dd__col pg-dd--do">
+        <h4>✓ Do</h4>
+        <ul>
+          <li>Write real headings and body text — it's read by search engines and screen readers.</li>
+          <li>Always fill <b>image alt text</b> for accessibility (ADA).</li>
+          <li>Reuse the same section across pages; just change the content.</li>
+          <li>Double-check SKUs on the live PDP before publishing.</li>
+          <li>Publish linked dependencies, then request the Fastly flush.</li>
+        </ul>
+      </div>
+      <div class="pg-dd__col pg-dd--dont">
+        <h4>✕ Don't</h4>
+        <ul>
+          <li>Touch the site header or footer — the kit lives only in the page body.</li>
+          <li>Bake copy into images; keep text as real text for SEO and ADA.</li>
+          <li>Change the Alpine + scoped-CSS pattern or add Tailwind to a section.</li>
+          <li>Assume the discount % is charged — it's display only in Phase 1.</li>
+          <li>Expect changes to show instantly without a publish + cache flush.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 8 -->
+<footer class="pg-foot" id="links">
+  <div class="pg-foot__inner">
+    <h3>Links</h3>
+    <div class="pg-links">
+      <a href="https://qa1.vitaminshoppe.com/lp/PrimeHydrationDrinks" target="_blank" rel="noopener">
+        <span class="k">Live example</span> qa1.vitaminshoppe.com/lp/PrimeHydrationDrinks</a>
+      <a href="https://app.amplience.net/content/#!/vitaminshoppeqa/authoring/content-item/edit/a2cadfb0-a401-4a42-828f-af748fe86feb" target="_blank" rel="noopener">
+        <span class="k">Edit (CMS)</span> app.amplience.net · Prime Hydration landing page</a>
+    </div>
+    <p class="pg-foot__note">Platter × The Vitamin Shoppe — reusable section kit, Phase 1. Sections are
+      AlpineJS + scoped CSS, dropped into a landing page between the site header and footer. Built by Platter.</p>
+  </div>
+</footer>
+
+</body>
+</html>
